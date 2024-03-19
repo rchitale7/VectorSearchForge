@@ -41,15 +41,18 @@ if (NOT EXISTS ${FAISS_REPO_DIR})
 endif ()
 
 option(FAISS_ENABLE_RAFT "Enable RAFT for GPU indexes." OFF)
-# I will look into this when we run this on GPU machine
+
+# Running the CAGRA Indices
 if(FAISS_ENABLE_RAFT)
-#    find_package(CUDAToolkit REQUIRED)
-#    ## Find the raft package
-#    find_package(raft COMPONENTS compiled distributed)
-#    add_executable(cagra-test EXCLUDE_FROM_ALL cagra-test.cpp)
-#    ## Add the raft dependencies
-#    target_link_libraries(cagra-test PRIVATE faiss CUDA::cudart raft::raft raft::compiled)
-#
+    set(FAISS_ENABLE_GPU ON)
+    set(FAISS_ENABLE_RAFT ON)
+    find_package(CUDAToolkit REQUIRED)
+    ## Find the raft package
+    find_package(raft COMPONENTS compiled distributed)
+    add_executable(cagra-gpu-index EXCLUDE_FROM_ALL cagra-gpu-index.cpp)
+    ## Add the raft dependencies
+    target_link_libraries(cagra-gpu-index PRIVATE faiss CUDA::cudart raft::raft raft::compiled)
+
 #    add_executable(check-id-map-working EXCLUDE_FROM_ALL check-id-map-working.cpp)
 #    target_link_libraries(check-id-map-working PRIVATE faiss CUDA::cudart raft::raft raft::compiled)
 else ()
