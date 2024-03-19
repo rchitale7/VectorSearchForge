@@ -1,0 +1,4 @@
+[submodule "external/faiss"]
+	path = external/faiss
+	url = https://github.com/navneet1v/faiss.git
+	branch = raft-cagra-hnsw
