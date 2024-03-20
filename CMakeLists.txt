@@ -2,15 +2,15 @@ cmake_minimum_required(VERSION 3.23.1)
 
 project(VectorSearchForge)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-
-set(FAISS_TEST_HNSW faiss-test)
 
 set(BUILD_TESTING OFF)          # Avoid building faiss tests
 set(BLA_STATIC ON)              # Statically link BLAS
 set(FAISS_OPT_LEVEL generic)    # Keep optimization level generic
-set(FAISS_ENABLE_PYTHON OFF)
+set(FAISS_ENABLE_GPU OFF)
+option(FAISS_ENABLE_PYTHON "Enable python bindings for Faiss" OFF)
+option(FAISS_ENABLE_RAFT "Enable RAFT for GPU indexes." OFF)
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL Darwin)
     if(CMAKE_C_COMPILER_ID MATCHES "Clang\$")
@@ -40,29 +40,21 @@ if (NOT EXISTS ${FAISS_REPO_DIR})
     execute_process(COMMAND git submodule update --init -- external/faiss WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endif ()
 
-option(FAISS_ENABLE_RAFT "Enable RAFT for GPU indexes." OFF)
-
-# Running the CAGRA Indices
+# This add faiss as a subdirectory for all the files.
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/faiss EXCLUDE_FROM_ALL)
+add_subdirectory(cpp)
+# Running the GPU Indices
 if(FAISS_ENABLE_RAFT)
     set(FAISS_ENABLE_GPU ON)
-    set(FAISS_ENABLE_RAFT ON)
     find_package(CUDAToolkit REQUIRED)
     ## Find the raft package
     find_package(raft COMPONENTS compiled distributed)
-    add_executable(cagra-gpu-index EXCLUDE_FROM_ALL cagra-gpu-index.cpp)
+
+    set(CAGRA_GPU_INDEX cagra-gpu-index)
+
+    add_executable(${CAGRA_GPU_INDEX} EXCLUDE_FROM_ALL ${CMAKE_CURRENT_SOURCE_DIR}/cpp/gpu/cagra-gpu-index.cpp)
     ## Add the raft dependencies
-    target_link_libraries(cagra-gpu-index PRIVATE faiss CUDA::cudart raft::raft raft::compiled)
-
-#    add_executable(check-id-map-working EXCLUDE_FROM_ALL check-id-map-working.cpp)
-#    target_link_libraries(check-id-map-working PRIVATE faiss CUDA::cudart raft::raft raft::compiled)
-else ()
-    set(FAISS_ENABLE_GPU OFF)
+    target_link_libraries(${CAGRA_GPU_INDEX} PRIVATE faiss CUDA::cudart raft::raft raft::compiled)
+    #target_include_directories(${CAGRA_GPU_INDEX} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/faiss)
+    set_target_properties(${CAGRA_GPU_INDEX} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
-
-
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/faiss EXCLUDE_FROM_ALL)
-
-add_executable(${FAISS_TEST_HNSW} ${CMAKE_CURRENT_SOURCE_DIR}/cpp/faiss-test.cpp)
-target_link_libraries(${FAISS_TEST_HNSW} faiss OpenMP::OpenMP_CXX)
-target_include_directories(${FAISS_TEST_HNSW} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/faiss)
-set_target_properties(${FAISS_TEST_HNSW} PROPERTIES POSITION_INDEPENDENT_CODE ON)
