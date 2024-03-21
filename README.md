@@ -16,7 +16,7 @@ cmake --build cmake-build-debug --target faiss-test -j 10
 
 #### Building all the CPP files on GPU
 ```
-cmake -B build . -DFAISS_ENABLE_RAFT=ON -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=ON -DFAISS_ENABLE_PYTHON=OFF -GNinja
+cmake -B build . -DFAISS_ENABLE_RAFT=ON -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=ON -DFAISS_ENABLE_PYTHON=OFF -GNinja -DCMAKE_CUDA_ARCHITECTURES=native
 ```
 
 ```
@@ -27,3 +27,29 @@ cmake --build build --target cagra-gpu-index -j 10
 ```
 git submodule update --remote
 ```
+
+### CPU Python 
+```conda create -n faiss-cpu  python=3.8```
+
+```
+cmake -B cmake-build-debug -DCMAKE_BUILD_TYPE=Debug -GNinja .  -DFAISS_ENABLE_PYTHON=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=${CONDA_PREFIX} -DFAISS_ENABLE_GPU=ON -GNinja
+```
+
+```
+/Applications/CLion.app/Contents/bin/ninja/mac/x64/ninja -C cmake-build-debug -j4 install
+
+```
+
+```
+cd cmake-build-debug/external/faiss/faiss/python && python3 setup.py build
+```
+
+```
+cd cmake-build-debug/external/faiss/faiss/python
+```
+
+
+cmake -B build .
+make -C build -j faiss swigfaiss
+
+export PYTHONPATH="$(ls -d `pwd`/build/external/faiss/faiss/python/build/lib*/):`pwd`/"

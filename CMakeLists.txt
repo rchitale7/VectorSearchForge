@@ -9,8 +9,6 @@ set(BUILD_TESTING OFF)          # Avoid building faiss tests
 set(BLA_STATIC ON)              # Statically link BLAS
 set(FAISS_OPT_LEVEL generic)    # Keep optimization level generic
 set(FAISS_ENABLE_GPU OFF)
-option(FAISS_ENABLE_PYTHON "Enable python bindings for Faiss" OFF)
-option(FAISS_ENABLE_RAFT "Enable RAFT for GPU indexes." OFF)
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL Darwin)
     if(CMAKE_C_COMPILER_ID MATCHES "Clang\$")
@@ -41,7 +39,7 @@ if (NOT EXISTS ${FAISS_REPO_DIR})
 endif ()
 
 # This add faiss as a subdirectory for all the files.
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/faiss EXCLUDE_FROM_ALL)
+
 add_subdirectory(cpp)
 # Running the GPU Indices
 if(FAISS_ENABLE_RAFT)
@@ -58,3 +56,4 @@ if(FAISS_ENABLE_RAFT)
     #target_include_directories(${CAGRA_GPU_INDEX} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/external/faiss)
     set_target_properties(${CAGRA_GPU_INDEX} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/external/faiss EXCLUDE_FROM_ALL)
