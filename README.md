@@ -31,8 +31,14 @@ git submodule update --remote
 ### CPU Python 
 ```conda create -n faiss-cpu  python=3.8```
 
+#### For GPU
 ```
-cmake -B cmake-build-debug -DCMAKE_BUILD_TYPE=Debug -GNinja .  -DFAISS_ENABLE_PYTHON=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=${CONDA_PREFIX} -DFAISS_ENABLE_GPU=ON -GNinja
+cmake -B build -DCMAKE_BUILD_TYPE=Release -GNinja .  -DFAISS_ENABLE_PYTHON=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=${CONDA_PREFIX} -DFAISS_ENABLE_GPU=ON -GNinja
+```
+
+#### Not working For CPU
+```
+cmake -B build -DCMAKE_BUILD_TYPE=Release -GNinja .  -DFAISS_ENABLE_PYTHON=ON -DBUILD_SHARED_LIBS=ON -DFAISS_ENABLE_GPU=OFF -GNinja
 ```
 
 ```
@@ -41,15 +47,22 @@ cmake -B cmake-build-debug -DCMAKE_BUILD_TYPE=Debug -GNinja .  -DFAISS_ENABLE_PY
 ```
 
 ```
-cd cmake-build-debug/external/faiss/faiss/python && python3 setup.py build
+cd build/external/faiss/faiss/python && python3 setup.py build
 ```
 
 ```
 cd cmake-build-debug/external/faiss/faiss/python
 ```
 
-
+### Working for CPU
+```
 cmake -B build .
 make -C build -j faiss swigfaiss
 
+cd build/external/faiss/faiss/python && python3 setup.py build
+
 export PYTHONPATH="$(ls -d `pwd`/build/external/faiss/faiss/python/build/lib*/):`pwd`/"
+
+
+
+```
