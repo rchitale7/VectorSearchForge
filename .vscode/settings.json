@@ -1,0 +1,5 @@
+{
+  "python.analysis.extraPaths": [
+    "./build/external/faiss/faiss/python/build/lib"
+  ]
+}

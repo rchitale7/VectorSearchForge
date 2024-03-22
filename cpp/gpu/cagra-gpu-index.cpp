@@ -27,7 +27,7 @@ struct Options {
 
         graphDegree = 16;
         intermediateGraphDegree = 32;
-        buildAlgo = faiss::gpu::graph_build_algo::IVF_PQ;
+        buildAlgo = faiss::gpu::graph_build_algo::NN_DESCENT;
 
         numQuery = 1;
         k = 5;
