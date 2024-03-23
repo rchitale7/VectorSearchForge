@@ -9,9 +9,9 @@ from python.utils.timer import timer_func
 
 @timer_func
 def prepare_data(datasetFile: str):
-    index_dataset = HDF5DataSet(datasetFile, Context.INDEX)
-    xb = index_dataset.read(index_dataset.size())
-    d = len(xb[0])
+    index_dataset: HDF5DataSet = HDF5DataSet(datasetFile, Context.INDEX)
+    xb: np.ndarray = index_dataset.read(index_dataset.size())
+    d:int = len(xb[0])
     print(f"Dimensions: {d}")
     print(f"Dataset size: {len(xb)}")
     ids = [i for i in range(len(xb))]
@@ -44,13 +44,20 @@ def indexData(datasetFile: str):
     cagraIndexConfig.intermediate_graph_degree = 8
     cagraIndexConfig.graph_degree = 4
     cagraIndexConfig.device = faiss.get_num_gpus() - 1
-    cagraIndexConfig.build_algo = faiss.graph_build_algo_IVF_PQ
+    cagraIndexConfig.build_algo = faiss.graph_build_algo_NN_DESCENT
 
     cagraIndex = faiss.GpuIndexCagra(res, d, faiss.METRIC_L2, cagraIndexConfig)
+    cagraIndex_withoutIds = faiss.GpuIndexCagra(res, d, faiss.METRIC_L2, cagraIndexConfig)
     idMapIndex = faiss.IndexIDMap(cagraIndex)
+
+    indexData_withoutIds(cagraIndex_withoutIds, xb)
 
     indexDataInIndex(idMapIndex, ids, xb)
     writeCagraIndexOnFile(idMapIndex, cagraIndex, "sift.cagra.graph")
+
+@timer_func
+def indexData_withoutIds(index:faiss.GpuIndexCagra, xb):
+    index.train(xb)
 
 
 @timer_func
@@ -71,7 +78,7 @@ def main(argv):
     datasetFile = None
     for opt, arg in opts:
         if opt == '-h':
-            print('--dataset_file <inputfile>')
+            print('--dataset_file <dataset file path>')
             sys.exit()
         elif opt in "--dataset_file":
             datasetFile = arg
