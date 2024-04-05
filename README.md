@@ -3,7 +3,7 @@
 ### Setup C++
 #### Building all the CPP files on CPU and Run simple test
 ```
-cmake -B cmake-build-debug -DCMAKE_BUILD_TYPE=Debug -GNinja .  -DFAISS_ENABLE_PYTHON=OFF
+cmake -B cmake-build-debug -DCMAKE_BUILD_TYPE=Release -GNinja .  -DFAISS_ENABLE_PYTHON=OFF
 ```
 
 ```
@@ -16,7 +16,8 @@ cmake --build cmake-build-debug --target faiss-test -j 10
 
 #### Building all the CPP files on GPU
 ```
-cmake -B build . -DFAISS_ENABLE_RAFT=ON -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=ON -DFAISS_ENABLE_PYTHON=OFF -GNinja -DCMAKE_CUDA_ARCHITECTURES=80
+
+cmake -B build . -DCMAKE_BUILD_TYPE=Release -DFAISS_ENABLE_RAFT=ON  -DBUILD_SHARED_LIBS=ON -DFAISS_ENABLE_PYTHON=ON -GNinja -DCMAKE_CUDA_ARCHITECTURES=80  -DFAISS_ENABLE_GPU=ON -DCUDAToolkit_ROOT="/home/ubuntu/miniconda3/envs/faiss-gpu/lib"
 ```
 
 ```
@@ -40,14 +41,10 @@ for versions >=4.2.0 the faiss swig build will fail. GH issue: https://github.co
 
 ```
 cmake -B build . -DFAISS_ENABLE_RAFT=ON  -DBUILD_SHARED_LIBS=ON -DFAISS_ENABLE_PYTHON=ON -GNinja -DCMAKE_CUDA_ARCHITECTURES=80 -DCMAKE_INSTALL_PREFIX=${CONDA_PREFIX} -DFAISS_ENABLE_GPU=ON
-
-cmake -B build . -DFAISS_ENABLE_RAFT=ON  -DBUILD_SHARED_LIBS=ON -DFAISS_ENABLE_PYTHON=ON  -DCMAKE_CUDA_ARCHITECTURES=80 -DCMAKE_INSTALL_PREFIX=${CONDA_PREFIX} -DFAISS_ENABLE_GPU=ON
 ```
 
 ```
-ninja -C cmake-build-debug -j4 install
-
-cmake --build build --target faiss swigfaiss -j 10
+ninja -C build -j10 install faiss swigfaiss
 
 ```
 
@@ -78,13 +75,11 @@ cd cmake-build-debug/external/faiss/faiss/python
 
 ### Working for CPU
 ```
-cmake -B build .
+cmake -B build . -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DFAISS_ENABLE_PYTHON=ON -DFAISS_ENABLE_GPU=OFF -DFAISS_ENABLE_RAFT=OFF
 make -C build -j faiss swigfaiss
 
 cd build/external/faiss/faiss/python && python3 setup.py build
 
 export PYTHONPATH="$(ls -d `pwd`/build/external/faiss/faiss/python/build/lib*/):`pwd`/"
-
-
 
 ```
