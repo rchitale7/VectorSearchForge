@@ -8,9 +8,17 @@ from python.utils.timer import timer_func
 
 
 class IndexTypes(Enum):
-    CPU = 1
+    CPU = 'cpu'
+    GPU = 'gpu'
 
-    GPU = 2
+    @staticmethod
+    def from_str(labelstr:str):
+        if labelstr in 'cpu':
+            return IndexTypes.CPU
+        elif labelstr in 'gpu':
+            return IndexTypes.GPU
+        else:
+            raise NotImplementedError
 
 
 @timer_func
@@ -47,10 +55,7 @@ def main(argv):
         elif opt in "--dataset_file":
             datasetFile = arg
         elif opt == '--index_type':
-            if IndexTypes.__contains__(arg):
-                indexType = IndexTypes.__getitem__(arg)
-            else:
-                print(f"Not valid Index Type. Please select a value from {IndexTypes}")
+            indexType = IndexTypes.from_str(arg)
 
     indexData(datasetFile, indexType)
 
