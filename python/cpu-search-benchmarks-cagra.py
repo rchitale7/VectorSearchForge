@@ -5,6 +5,9 @@ import getopt
 import numpy as np
 import sys
 import logging
+from python.dataset.dataset import HDF5DataSet, Context
+from python.decorators.timer import timer_func
+from python.utils.common_utils import recall_at_r
 
 logging.getLogger(__name__).setLevel(logging.INFO)
 
@@ -17,30 +20,44 @@ def loadGraphFromFile(graphFile: str):
     return faiss.read_index(graphFile)
 
 
-def runSearch(index: faiss.Index):
-    xq = np.array([[90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111,
-                    112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131,
-                    132, 133, 134, 135, 136, 137, 138, 139]]).astype('float32')
-    k = 10
-    D, I = index.search(xq, k)
+@timer_func
+def prepare_data(datasetFile: str):
+    index_dataset: HDF5DataSet = HDF5DataSet(datasetFile, Context.QUERY)
+    xq: np.ndarray = index_dataset.read(index_dataset.size())
+    gt = HDF5DataSet(datasetFile, Context.NEIGHBORS)
+    d: int = len(xq[0])
+    logging.info(f"Dimensions: {d}")
+    logging.info(f"Dataset size: {len(xq)}")
+    return d, xq, gt
 
-    # D and I are 2D arrays
-    print(D[0][:k])  # returns top K element distance
-    print(I[0][:k])  # returns top k element Id
+
+def runSearch(index: faiss.Index, d: int, xq: np.ndarray, gt: HDF5DataSet):
+    logging.info(f"Dimensions : {d}")
+
+    hnswParameters = faiss.SearchParametersHNSW()
+    hnswParameters.efSearch = 512
+
+    D, I = index.search(xq, 100, params=hnswParameters)
+
+    logging.info(f"Recall at 100 : is {recall_at_r(I, gt, 100, 100, len(xq))}")
+    logging.info(f"Recall at 1 : is {recall_at_r(I, gt, 1, 1, len(xq))}")
 
 
 def main(argv):
-    opts, args = getopt.getopt(argv, "", ["graph_input_file="])
-    graphInputFile = "/Volumes/workplace/VectorSearchForge/cagraindex-test-with-ids.txt"
+    opts, args = getopt.getopt(argv, "", ["graph_input_file=", "dataset_file="])
+    graphInputFile = None
+    datasetFile = None
     for opt, arg in opts:
         if opt == '-h':
             print('--graph_input_file <inputfile>')
             sys.exit()
         elif opt in "--graph_input_file":
             graphInputFile = arg
-
+        elif opt in "--dataset_file":
+            datasetFile = arg
+    d, xq, gt = prepare_data(datasetFile=datasetFile)
     index = loadGraphFromFile(graphInputFile)
-    runSearch(index)
+    runSearch(index, d, xq, gt)
 
 
 if __name__ == "__main__":

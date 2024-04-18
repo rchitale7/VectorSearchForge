@@ -3,8 +3,8 @@ from enum import Enum
 
 import numpy as np
 import sys
-from python.utils.dataset import HDF5DataSet, Context
-from python.utils.timer import timer_func
+from python.dataset.dataset import HDF5DataSet, Context
+from python.decorators.timer import timer_func
 
 
 class IndexTypes(Enum):

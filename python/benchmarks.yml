@@ -1,0 +1,56 @@
+gpu:
+  sift-128:
+    dataset_name: sift
+    download_url: "http://ann-benchmarks.com/sift-128-euclidean.hdf5"
+    normalize: false
+    indexing-parameters:
+      - {"nlist": 122}
+    search-parameters:
+      - {"ef_search": 256}
+      - {"ef_search": 512}
+  cohere-768:
+    dataset_name: sift
+    download_url: URL
+    normalize: true
+    indexing-parameters:
+      - { "nlist": 122 }
+    search-parameters:
+      - { "ef_search": 256 }
+      - { "ef_search": 512 }
+  gist-960:
+    dataset_name: sift
+    download_url: "http://ann-benchmarks.com/gist-960-euclidean.hdf5"
+    indexing-parameters:
+      - {"nlist": 122}
+    search-parameters:
+      - {"ef_search": 256}
+      - {"ef_search": 512}
+
+cpu:
+  sift-128:
+    dataset_name: sift
+    download_url: "http://ann-benchmarks.com/sift-128-euclidean.hdf5"
+    normalize: false
+    indexing-parameters:
+      - {"ef_construction": 512}
+    search-parameters:
+      - {"ef_search": 256}
+      - {"ef_search": 512}
+  cohere-768:
+    dataset_name: cohere
+    download_url: URL
+    normalize: true
+    indexing-parameters:
+      - { "ef_construction": 512 }
+    search-parameters:
+      - { "ef_search": 256 }
+      - { "ef_search": 512 }
+  gist-960:
+    dataset_name: gist
+    download_url: "http://ann-benchmarks.com/gist-960-euclidean.hdf5"
+    normalize: false
+    indexing-parameters:
+      - {"ef_construction": 512}
+    search-parameters:
+      - {"ef_search": 256}
+      - {"ef_search": 512}
