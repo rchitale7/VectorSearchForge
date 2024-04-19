@@ -30,10 +30,7 @@ def prepare_indexing_dataset(datasetFile: str, normalize: bool = None):
     index_dataset: HDF5DataSet = HDF5DataSet(datasetFile, Context.INDEX)
     xb: np.ndarray = index_dataset.read(index_dataset.size())
     d: int = len(xb[0])
-    logging.info(f"Dimensions: {d} for dataset file: {datasetFile}")
-    logging.info(f"Dataset size: {len(xb)}")
     ids = [i for i in range(len(xb))]
-
     if normalize:
         logging.info("Doing normalization...")
         xb = xb / np.linalg.norm(xb)

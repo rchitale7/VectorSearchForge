@@ -1,3 +1,6 @@
+import math
+import os
+
 def recall_at_r(results, neighbor_dataset, r, k, query_count):
     """
     Calculates the recall@R for a set of queries against a ground truth nearest
@@ -30,3 +33,6 @@ def recall_at_r(results, neighbor_dataset, r, k, query_count):
                 correct += 1.0
 
     return correct / total_num_of_results
+
+def get_omp_num_threads():
+    return min(math.floor(os.cpu_count()/4), 1)

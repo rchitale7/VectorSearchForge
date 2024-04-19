@@ -83,3 +83,15 @@ cd build/external/faiss/faiss/python && python3 setup.py build
 export PYTHONPATH="$(ls -d `pwd`/build/external/faiss/faiss/python/build/lib*/):`pwd`/"
 
 ```
+
+### Workload Testing
+
+#### Indexing GPU
+```
+python python/main.py --workload=sift-128 --index_type=gpu
+```
+
+#### Indexing CPU
+```
+python python/main.py --workload=sift-128 --index_type=cpu
+```
