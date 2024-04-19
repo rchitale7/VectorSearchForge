@@ -3,8 +3,10 @@ from python.decorators.timer import timer_func
 from python.utils.common_utils import get_omp_num_threads
 import logging
 from timeit import default_timer as timer
+import math
+import numpy as np
 
-def indexData(d, xb, ids, indexingParams={}, file_to_write="gpuIndex.cagra.graph"):
+def indexData(d:int, xb:np.ndarray, ids:np.ndarray, indexingParams:dict={}, file_to_write:str="gpuIndex.cagra.graph"):
     num_of_parallel_threads = get_omp_num_threads()
     logging.info(f"Setting number of parallel threads for graph build: {num_of_parallel_threads}")
     faiss.omp_set_num_threads(num_of_parallel_threads)
@@ -30,7 +32,7 @@ def indexData(d, xb, ids, indexingParams={}, file_to_write="gpuIndex.cagra.graph
     cagraIndexIVFPQConfig.kmeans_n_iters = 10 if indexingParams.get('kmeans_n_iters') == None else indexingParams['kmeans_n_iters']
     cagraIndexIVFPQConfig.pq_bits = 8 if indexingParams.get('pq_bits') == None else indexingParams['pq_bits']
     cagraIndexIVFPQConfig.pq_dim = 32 if indexingParams.get('pq_dim') == None else indexingParams['pq_dim']
-    cagraIndexIVFPQConfig.n_lists = 1000 if indexingParams.get('n_lists') == None else indexingParams['n_lists']
+    cagraIndexIVFPQConfig.n_lists = int(math.sqrt(len(xb))) if indexingParams.get('n_lists') == None else indexingParams['n_lists']
     cagraIndexIVFPQConfig.kmeans_trainset_fraction = 10 if indexingParams.get('kmeans_trainset_fraction') == None else indexingParams['kmeans_trainset_fraction']
     cagraIndexConfig.ivf_pq_params = cagraIndexIVFPQConfig
 

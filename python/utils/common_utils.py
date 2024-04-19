@@ -1,7 +1,9 @@
 import math
 import os
 
-def recall_at_r(results, neighbor_dataset, r, k, query_count):
+from python.dataset.dataset import HDF5DataSet
+
+def recall_at_r(results, neighbor_dataset:HDF5DataSet, r, k, query_count):
     """
     Calculates the recall@R for a set of queries against a ground truth nearest
     neighbor set
@@ -31,7 +33,7 @@ def recall_at_r(results, neighbor_dataset, r, k, query_count):
         for j in range(min_r):
             if results[query][j] in true_neighbors_set:
                 correct += 1.0
-
+    neighbor_dataset.reset()
     return correct / total_num_of_results
 
 def get_omp_num_threads():
