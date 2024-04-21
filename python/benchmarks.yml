@@ -12,8 +12,10 @@ gpu:
       - {"ef_search": 100}
       - {"ef_search": 256}
   cohere-768:
-    dataset_name: sift
-    download_url: URL
+    dataset_name: cohere
+    download_url: https://dbyiw3u3rf9yr.cloudfront.net/corpora/vectorsearch/cohere-wikipedia-22-12-en-embeddings/documents-1m.hdf5.bz2
+    compressed: true
+    compression-type: bz2
     normalize: true
     indexing-parameters:
       - {"compression_factor": 4}
@@ -24,7 +26,7 @@ gpu:
       - {"ef_search": 100}
       - {"ef_search": 256}
   gist-960:
-    dataset_name: sift
+    dataset_name: gist
     download_url: "http://ann-benchmarks.com/gist-960-euclidean.hdf5"
     indexing-parameters:
       - {"compression_factor": 4}
@@ -47,7 +49,9 @@ cpu:
       - {"ef_search": 256}
   cohere-768:
     dataset_name: cohere
-    download_url: URL
+    download_url: https://dbyiw3u3rf9yr.cloudfront.net/corpora/vectorsearch/cohere-wikipedia-22-12-en-embeddings/documents-1m.hdf5.bz2
+    compressed: true
+    compression-type: bz2
     normalize: true
     indexing-parameters:
       - { "ef_construction": 100 }

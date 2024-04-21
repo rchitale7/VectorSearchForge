@@ -38,3 +38,10 @@ def recall_at_r(results, neighbor_dataset:HDF5DataSet, r, k, query_count):
 
 def get_omp_num_threads():
     return min(math.floor(os.cpu_count()/4), 1)
+
+def ensureDir(dirPath:str):
+    if os.path.isdir(dirPath) == False:
+        os.makedirs(dirPath)
+
+def formatTimingMetricsValue(value):
+    return float(f"{value:.2f}")

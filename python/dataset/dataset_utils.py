@@ -1,27 +1,56 @@
 import logging
 import os
+import shutil
 from urllib.request import urlretrieve
+
+from pkg_resources import ensure_directory
 from python.decorators.timer import timer_func
 from python.dataset.dataset import HDF5DataSet, Context
 import numpy as np
 import logging
+import bz2
+import sys
+
+from python.utils.common_utils import ensureDir
 
 
 def downloadDataSetForWorkload(workloadToExecute: dict) -> str:
     download_url = workloadToExecute["download_url"]
     dataset_name = workloadToExecute["dataset_name"]
+    isCompressed = False if workloadToExecute.get("compressed") is None else True
+    compressionType = workloadToExecute.get("compression-type")
+    return downloadDataSet(download_url, dataset_name, isCompressed, compressionType)
 
-    return downloadDataSet(download_url, dataset_name)
 
-
-def downloadDataSet(download_url: str, dataset_name: str) -> str:
+def downloadDataSet(download_url: str, dataset_name: str, isCompressed:bool, compressionType:str | None) -> str:
     logging.info("Downloading dataset...")
+    destination_path_compressed = None
+    ensureDir("dataset")
+    if compressionType is not None:
+        destination_path_compressed = os.path.join("dataset", f"{dataset_name}.hdf5.{compressionType}")
     destination_path = os.path.join("dataset", f"{dataset_name}.hdf5")
+
     if not os.path.exists(destination_path):
-        logging.info(f"downloading {download_url} -> {destination_path}...")
-        urlretrieve(download_url, destination_path)
+        if isCompressed:
+            logging.info(f"downloading {download_url} -> {destination_path_compressed} ...")
+            urlretrieve(download_url, destination_path_compressed)
+            decompress_dataset(destination_path_compressed, compressionType, destination_path)
+        else:
+            logging.info(f"downloading {download_url} -> {destination_path} ...")
+            urlretrieve(download_url, destination_path)
         logging.info(f"downloaded {download_url} -> {destination_path}...")
     return destination_path
+
+@timer_func
+def decompress_dataset(filePath:str, compressionType:str, outputFile:str):
+    logging.info(f"Decompression {filePath} having compression type: {compressionType}")
+    if compressionType == "bz2":
+        with bz2.BZ2File(filePath) as fr, open(outputFile,"wb") as fw:
+            shutil.copyfileobj(fr, fw, length = 1024 * 1024 * 10)  # read by 100MB chunks
+        logging.info("Completed decompression... ")
+    else:
+        logging.error(f"Compression type : {compressionType} is not supported for decompression")
+        sys.exit()
 
 
 @timer_func
