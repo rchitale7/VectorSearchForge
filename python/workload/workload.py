@@ -14,7 +14,14 @@ logging.basicConfig(level=logging.INFO)
 
 def runWorkload(workloadName: dict, indexType: IndexTypes, workloadType: WorkloadTypes):
     allWorkloads = readAllWorkloads()
-    workloadToExecute = allWorkloads[indexType.value][workloadName]
+    
+    if workloadName == "all":
+        for currentWorkloadName in allWorkloads[indexType.value]:
+            executeWorkload(workloadName=currentWorkloadName, workloadToExecute=allWorkloads[indexType.value][currentWorkloadName], indexType=indexType, workloadType=workloadType)
+    else:
+        executeWorkload(workloadName=workloadName, workloadToExecute=allWorkloads[indexType.value][workloadName], indexType=indexType, workloadType=workloadType)
+
+def executeWorkload(workloadName: str, workloadToExecute:dict, indexType: IndexTypes, workloadType: WorkloadTypes):
     workloadToExecute["indexType"] = indexType.value
     logging.info(workloadToExecute)
     dataset_file = dataset_utils.downloadDataSetForWorkload(workloadToExecute)
@@ -36,8 +43,6 @@ def runWorkload(workloadName: dict, indexType: IndexTypes, workloadType: Workloa
     
     logging.info(json.dumps(allMetrics))
     persistMetricsAsJson(workloadType, allMetrics, workloadName, indexType)
-    persistMetricsAsCSV(workloadType, allMetrics, workloadName, indexType)
-
 
 def persistMetricsAsJson(workloadType: WorkloadTypes, allMetrics: dict, workloadName: str, indexType:IndexTypes):
     ensureDir(f"results/{workloadName}")
@@ -57,7 +62,7 @@ def doIndexing(workloadToExecute: dict, datasetFile: str, indexType: IndexTypes)
         logging.info(f"================ Running configuration: {param} ================")
         if indexType == IndexTypes.CPU:
             from python.indexing.cpu.create_cpu_index import indexData as indexDataInCpu
-            timingMetrics = indexDataInCpu(d, xb, ids, file_to_write=workloadToExecute["graph_file"])
+            timingMetrics = indexDataInCpu(d, xb, ids, file_to_write=param["graph_file"])
 
         if indexType == IndexTypes.GPU:
             param["pq_dim"] = int(d / param['compression_factor'])

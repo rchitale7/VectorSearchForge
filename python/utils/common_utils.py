@@ -1,5 +1,8 @@
 import math
 import os
+import yaml
+import logging
+import sys
 
 from python.dataset.dataset import HDF5DataSet
 
@@ -45,3 +48,11 @@ def ensureDir(dirPath:str):
 
 def formatTimingMetricsValue(value):
     return float(f"{value:.2f}")
+
+def readAllWorkloads():
+    with open("./python/benchmarks.yml") as stream:
+        try:
+            return yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            logging.error(exc)
+            sys.exit()

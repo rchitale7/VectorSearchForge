@@ -11,6 +11,7 @@ gpu:
     search-parameters:
       - {"ef_search": 100}
       - {"ef_search": 256}
+      - {"ef_search": 512}
   cohere-768:
     dataset_name: cohere
     download_url: https://dbyiw3u3rf9yr.cloudfront.net/corpora/vectorsearch/cohere-wikipedia-22-12-en-embeddings/documents-1m.hdf5.bz2
@@ -25,6 +26,7 @@ gpu:
     search-parameters:
       - {"ef_search": 100}
       - {"ef_search": 256}
+      - {"ef_search": 512}
   gist-960:
     dataset_name: gist
     download_url: "http://ann-benchmarks.com/gist-960-euclidean.hdf5"
@@ -36,6 +38,7 @@ gpu:
     search-parameters:
       - {"ef_search": 100}
       - {"ef_search": 256}
+      - {"ef_search": 512}
 
 cpu:
   sift-128:
@@ -44,9 +47,12 @@ cpu:
     normalize: false
     indexing-parameters:
       - {"ef_construction": 100}
+      - {"ef_construction": 256}
+      - {"ef_construction": 512}
     search-parameters:
       - {"ef_search": 100}
       - {"ef_search": 256}
+      - {"ef_search": 512}
   cohere-768:
     dataset_name: cohere
     download_url: https://dbyiw3u3rf9yr.cloudfront.net/corpora/vectorsearch/cohere-wikipedia-22-12-en-embeddings/documents-1m.hdf5.bz2
@@ -55,15 +61,20 @@ cpu:
     normalize: true
     indexing-parameters:
       - { "ef_construction": 100 }
+      - {"ef_construction": 512}
     search-parameters:
       - { "ef_search": 100 }
       - { "ef_search": 256 }
+      - {"ef_search": 512}
   gist-960:
     dataset_name: gist
     download_url: "http://ann-benchmarks.com/gist-960-euclidean.hdf5"
     normalize: false
     indexing-parameters:
       - {"ef_construction": 100}
+      - {"ef_construction": 256}
+      - {"ef_construction": 512}
     search-parameters:
       - {"ef_search": 100}
       - {"ef_search": 256}
+      - {"ef_search": 512}

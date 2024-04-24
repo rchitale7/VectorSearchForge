@@ -22,7 +22,6 @@ def main(argv):
         elif opt == "--workload_type":
             workloadType = WorkloadTypes.from_str(arg)
 
-    print(indexType.value)
     runWorkload(workloadName, indexType, workloadType)
 
 

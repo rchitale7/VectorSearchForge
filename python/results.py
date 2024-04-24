@@ -2,10 +2,12 @@ import csv
 import getopt
 import json
 import logging
+import os
 import sys
 from python.data_types.data_types import IndexTypes, WorkloadTypes
-from python.utils.common_utils import ensureDir, formatTimingMetricsValue
+from python.utils.common_utils import ensureDir, formatTimingMetricsValue, readAllWorkloads
 
+logging.basicConfig(level=logging.INFO)
 
 def persistMetricsAsCSV(workloadType: WorkloadTypes, allMetrics: dict, workloadName: str, indexType: IndexTypes):
     ensureDir(f"results/{workloadName}")
@@ -56,18 +58,75 @@ def persistMetricsAsCSV(workloadType: WorkloadTypes, allMetrics: dict, workloadN
         writer.writerows(rows)
     
     logging.info(f"Results are stored at location: results/{workloadName}/{workloadType.value}_{indexType.value}.csv")
+    return f"results/{workloadName}/{workloadType.value}_{indexType.value}.csv"
 
 
-def writeDataInCSV(workloadName:str, indexType:IndexTypes, workloadType:WorkloadTypes):
+def writeDataInCSV(workloadName:str, indexType:str, workloadType:WorkloadTypes):
     if workloadType == WorkloadTypes.INDEX:
         logging.error("This type of workload is not supported for writing data in csv")
         sys.exit()
+    
+    indexTypesList = []
+
+    if indexType == "all":
+        indexTypesList = IndexTypes.enumList()
+    else:
+        indexTypesList.append(IndexTypes.from_str(indexType))
+
+    workloadCSVFiles = []
+    for indexTypeEnum in indexTypesList:
+        if workloadName == "all":
+            allWorkloads = readAllWorkloads()
+            
+            for currentWorkloadName in allWorkloads[indexTypeEnum.value]:
+                csvFile = writeDataInCSVPerWorkload(currentWorkloadName, indexTypeEnum, workloadType)
+                if csvFile is not None:
+                    workloadCSVFiles.append(csvFile)
+        else:
+            csvFile = writeDataInCSVPerWorkload(workloadName, indexTypeEnum, workloadType)
+            if csvFile is not None:
+                workloadCSVFiles.append(csvFile)
+
+    writeDataInSingleCSVFile(workloadCSVFiles, "all_results.csv")
+
+def writeDataInCSVPerWorkload(workloadName:str, indexType:IndexTypes, workloadType:WorkloadTypes)-> str:
     jsonFile = f"results/{workloadName}/{workloadType.value}_{indexType.value}.json"
+    if os.path.exists(jsonFile) is False:
+        logging.warn(f"No result file exist for {workloadName} , indexType: {indexType.value} workloadType {workloadType.value} at {jsonFile}")
+        return None
+
     f = open(jsonFile)
     allMetrics = json.load(f)
     f.close
-    persistMetricsAsCSV(workloadType, allMetrics, workloadName, indexType)
+    return persistMetricsAsCSV(workloadType, allMetrics, workloadName, indexType)
+
+def writeDataInSingleCSVFile(workloadCSVFiles: list, outfileName:str):
+    if len(workloadCSVFiles) == 0:
+        logging.warn("No CSV files to combine to a single result file")
+        return
+    ensureDir("results/all/")
+
+    if os.path.exists(f"results/all/{outfileName}"):
+        logging.info(f"Deleting the file results/all/{outfileName}, as it exist")
+        os.remove(f"results/all/{outfileName}")
+
+
+    outputFile = open(f"results/all/{outfileName}",'w')
+    # This will add header and other all the data from first file in output file.
+    with open(workloadCSVFiles[0]) as f:
+        logging.info(f"Writing file: {workloadCSVFiles[0]}")
+        for line in f:
+            outputFile.write(line)
     
+    # Now we call add all other files by skipping their headers
+    for resultFiles in workloadCSVFiles[1:]:
+        logging.info(f"Writing file: {resultFiles}")
+        with open(resultFiles) as f:
+            next(f)
+            for line in f:
+                outputFile.write(line)
+    logging.info(f"All data is written in the file results/all/{outfileName}")
+
 
 def main(argv):
     opts, args = getopt.getopt(argv, "", ["workload=", "index_type=", "workload_type=", "h"])
@@ -83,7 +142,7 @@ def main(argv):
         elif opt in "--workload":
             workloadName = arg
         elif opt == '--index_type':
-            indexType = IndexTypes.from_str(arg)
+            indexType = arg
         elif opt == "--workload_type":
             workloadType = WorkloadTypes.from_str(arg)
 
