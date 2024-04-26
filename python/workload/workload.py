@@ -76,10 +76,13 @@ def doIndexing(workloadToExecute: dict, datasetFile: str, indexType: IndexTypes)
                 "indexing-timingMetrics": timingMetrics
             }
         )
+    del xb
+    del ids
     return {
         "workload-details": workloadToExecute,
         "indexing-metrics": parameters_level_metrics
     }
+    
 
 
 def doSearch(workloadToExecute: dict, datasetFile: str, indexType: IndexTypes):
@@ -103,6 +106,8 @@ def doSearch(workloadToExecute: dict, datasetFile: str, indexType: IndexTypes):
                     "search-params": searchParam
                 }
             )
+    del xq
+    del gt
     return {
         "workload-details": workloadToExecute,
         "search-metrics": parameters_level_metrics

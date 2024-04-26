@@ -40,7 +40,7 @@ def recall_at_r(results, neighbor_dataset:HDF5DataSet, r, k, query_count):
     return correct / total_num_of_results
 
 def get_omp_num_threads():
-    return min(math.floor(os.cpu_count()/4), 1)
+    return max(math.floor(os.cpu_count()/4), 1)
 
 def ensureDir(dirPath:str):
     if os.path.isdir(dirPath) == False:

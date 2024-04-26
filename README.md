@@ -84,14 +84,37 @@ export PYTHONPATH="$(ls -d `pwd`/build/external/faiss/faiss/python/build/lib*/):
 
 ```
 
-### Workload Testing
+### Running Benchmarks
+
+#### Setup
+```
+export PYTHONPATH="$(ls -d `pwd`/build/external/faiss/faiss/python/build/lib*/):`pwd`/"
+```
 
 #### Indexing GPU
 ```
-python python/main.py --workload=sift-128 --index_type=gpu
+python python/main.py --workload=sift-128 --index_type=gpu --workload_type=index
 ```
 
 #### Indexing CPU
 ```
-python python/main.py --workload=sift-128 --index_type=cpu
+python python/main.py --workload=sift-128 --index_type=cpu --workload_type=index
 ```
+
+#### Run Both indexing and search 
+
+*GPU*
+```
+python python/main.py --workload=gist-960 --index_type=gpu --workload_type=index_and_search
+```
+
+*CPU*
+```
+python python/main.py --workload=gist-960 --index_type=cpu --workload_type=index_and_search
+```
+
+#### Exporting All results as CSV
+```
+python python/results.py --workload=all --index_type=gpu --workload_type=index_and_search
+```
+After this command the results will be stored under `results/all/all_results.csv`

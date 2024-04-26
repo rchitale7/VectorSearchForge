@@ -31,4 +31,8 @@ def indexData(d, xb, ids, file_to_write="cpuIndex.hnsw.graph", ef_construction:i
     writeIndex(cpuIdMapIndex, file_to_write)
     t2 = timer()
     writeIndexTime = t2 - t1
+    # this will ensure that everything is deleted
+    cpuIdMapIndex.own_fields = True
+    del cpuPureHNSWIndex
+    del cpuIdMapIndex
     return {"indexTime": indexTime, "writeIndexTime": writeIndexTime, "totalTime": indexTime + writeIndexTime, "unit": "seconds" }

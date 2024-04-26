@@ -27,6 +27,9 @@ def runIndicesSearch(xq, graphFile:str, param:dict, gt) -> dict:
     recall_at_1 = recall_at_r(I, gt, 1, 1, len(xq))
     logging.info(f"Recall at {k} : is {recall_at_k}")
     logging.info(f"Recall at 1 : is {recall_at_1}")
+    # deleting the index to avoid OOM
+    # We don't need to set own_fileds = true as this will be automatically set by faiss while reading the index.
+    del index
     return {
         "searchTime": t2 - t1,
         "units": "seconds",

@@ -130,8 +130,8 @@ def writeDataInSingleCSVFile(workloadCSVFiles: list, outfileName:str):
 
 def main(argv):
     opts, args = getopt.getopt(argv, "", ["workload=", "index_type=", "workload_type=", "h"])
-    workloadName = None
-    indexType = None
+    workloadName = "all"
+    indexType = "all"
     workloadType = WorkloadTypes.INDEX_AND_SEARCH
     for opt, arg in opts:
         if opt == '--h':
