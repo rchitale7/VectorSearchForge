@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO)
 
 def persistMetricsAsCSV(workloadType: WorkloadTypes, allMetrics: dict, workloadName: str, indexType: IndexTypes):
     ensureDir(f"results/{workloadName}")
-    fields = ["workload-name", "indexType", "dataset-name", "dimensions", "vectors-count", "queries-count", "indexing-params", "index-creation-time", "write-to-file-time", "total-build-time", "search-parameter", "search-time", "unit", "recall@100", "recall@1"]
+    fields = ["workload-name", "indexType", "dataset-name", "dimensions", "vectors-count", "queries-count", "indexing-params", "index-creation-time", "write-to-file-time", "total-build-time", "search-parameter", "search-time", "unit", "search-throughput", "recall@100", "recall@1"]
     rows = []
     if workloadType == WorkloadTypes.INDEX:
         logging.error("This type of workload is not supported for writing data in csv")
@@ -36,12 +36,12 @@ def persistMetricsAsCSV(workloadType: WorkloadTypes, allMetrics: dict, workloadN
                 "recall@100": searchTimingMetrics["recall_at_100"],
                 "recall@1": searchTimingMetrics["recall_at_1"],
                 "search-parameter": searchMetric["search-params"],
+                "search-throughput": searchTimingMetrics["search_throughput"],
             }
 
             if allMetrics[workloadName].get("indexingMetrics") is not None:
                 row["vectors-count"] = workloadDetails["vectorsCount"]
                 indexingMetrics = allMetrics[workloadName]["indexingMetrics"]
-                #float(f"{searchTimingMetrics['searchTime']:.4f}"),
                 row["index-creation-time"] = formatTimingMetricsValue(indexingMetrics[indexingParamItr]["indexing-timingMetrics"]["indexTime"])
                 row["write-to-file-time"] = formatTimingMetricsValue(indexingMetrics[indexingParamItr]["indexing-timingMetrics"]["writeIndexTime"])
                 row["total-build-time"] = formatTimingMetricsValue(indexingMetrics[indexingParamItr]["indexing-timingMetrics"]["totalTime"])

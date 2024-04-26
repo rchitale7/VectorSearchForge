@@ -12,14 +12,20 @@ import json
 logging.basicConfig(level=logging.INFO)
 
 
-def runWorkload(workloadName: dict, indexType: IndexTypes, workloadType: WorkloadTypes):
+def runWorkload(workloadName: dict, indexTypeStr: str, workloadType: WorkloadTypes):
     allWorkloads = readAllWorkloads()
-    
-    if workloadName == "all":
-        for currentWorkloadName in allWorkloads[indexType.value]:
-            executeWorkload(workloadName=currentWorkloadName, workloadToExecute=allWorkloads[indexType.value][currentWorkloadName], indexType=indexType, workloadType=workloadType)
+    indexTypesList = []
+    if indexTypeStr == "all":
+        indexTypesList = IndexTypes.enumList()
     else:
-        executeWorkload(workloadName=workloadName, workloadToExecute=allWorkloads[indexType.value][workloadName], indexType=indexType, workloadType=workloadType)
+        indexTypesList.append(IndexTypes.from_str(indexTypeStr))
+
+    for indexType in indexTypesList:
+        if workloadName == "all":
+            for currentWorkloadName in allWorkloads[indexType.value]:
+                executeWorkload(workloadName=currentWorkloadName, workloadToExecute=allWorkloads[indexType.value][currentWorkloadName], indexType=indexType, workloadType=workloadType)
+        else:
+            executeWorkload(workloadName=workloadName, workloadToExecute=allWorkloads[indexType.value][workloadName], indexType=indexType, workloadType=workloadType)
 
 def executeWorkload(workloadName: str, workloadToExecute:dict, indexType: IndexTypes, workloadType: WorkloadTypes):
     workloadToExecute["indexType"] = indexType.value

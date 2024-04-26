@@ -35,7 +35,8 @@ def runIndicesSearch(xq, graphFile:str, param:dict, gt) -> dict:
         "units": "seconds",
         f"recall_at_{k}": recall_at_k,
         "recall_at_1": recall_at_1,
-        "total_queries": len(xq)
+        "total_queries": len(xq),
+        "search_throughput" : len(xq)/( t2 - t1)
     }
 
 
