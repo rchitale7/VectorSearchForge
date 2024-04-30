@@ -6,14 +6,16 @@ from python.utils.common_utils import get_omp_num_threads
 from timeit import default_timer as timer
 
 
-def indexData(d, xb, ids, file_to_write="cpuIndex.hnsw.graph", ef_construction:int = 512, ef_search:int = 512) -> dict:
+def indexData(d, xb, ids, param, space_type, file_to_write="cpuIndex.hnsw.graph") -> dict:
     num_of_parallel_threads = get_omp_num_threads()
     logging.info(f"Setting number of parallel threads for graph build: {num_of_parallel_threads}")
     faiss.omp_set_num_threads(num_of_parallel_threads)
-    cpuPureHNSWIndex: faiss.IndexHNSWFlat = faiss.index_factory(d, "HNSW16,Flat", faiss.METRIC_L2)
+    metric = faiss.METRIC_L2
+    if space_type == "innerproduct":
+        metric = faiss.METRIC_INNER_PRODUCT
+    cpuPureHNSWIndex: faiss.IndexHNSWFlat = faiss.index_factory(d, "HNSW16,Flat", metric)
 
-    cpuPureHNSWIndex.hnsw.ef_search = ef_search
-    cpuPureHNSWIndex.hnsw.ef_construction = ef_construction
+    cpuPureHNSWIndex.hnsw.ef_construction = param["ef_construction"]
 
     cpuIdMapIndex = faiss.IndexIDMap(cpuPureHNSWIndex)
 

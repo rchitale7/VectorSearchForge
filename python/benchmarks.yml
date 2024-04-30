@@ -12,10 +12,39 @@ gpu:
       - {"ef_search": 100}
       - {"ef_search": 256}
       - {"ef_search": 512}
-  cohere-768:
-    dataset_name: cohere-768-l2
-    download_url: https://huggingface.co/datasets/navneet1v/cohere-768-l2/resolve/main/cohere-768-l2.hdf5?download=true
+  ms-marco-384:
+    dataset_name: ms-marco-384
+    download_url: "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/ms_marco-384-1m.hdf5?download=true"
     normalize: false
+    indexing-parameters:
+      - {"compression_factor": 4}
+      - {"compression_factor": 8}
+      - {"compression_factor": 16}
+      - {"compression_factor": 32}
+    search-parameters:
+      - {"ef_search": 100}
+      - {"ef_search": 256}
+      - {"ef_search": 512}
+  cohere-768-l2:
+    dataset_name: cohere-768-l2
+    download_url: https://huggingface.co/datasets/navneet1v/datasets/resolve/main/cohere-768-l2.hdf5?download=true
+    normalize: false
+    indexing-parameters:
+      - {"compression_factor": 4}
+      - {"compression_factor": 8}
+      - {"compression_factor": 16}
+      - {"compression_factor": 32}
+    search-parameters:
+      - {"ef_search": 100}
+      - {"ef_search": 256}
+      - {"ef_search": 512}
+  cohere-768-ip:
+    dataset_name: cohere-768-ip
+    download_url: https://dbyiw3u3rf9yr.cloudfront.net/corpora/vectorsearch/cohere-wikipedia-22-12-en-embeddings/documents-1m.hdf5.bz2
+    compressed: true
+    compression-type: bz2
+    normalize: false
+    space-type: innerproduct
     indexing-parameters:
       - {"compression_factor": 4}
       - {"compression_factor": 8}
@@ -51,18 +80,45 @@ cpu:
       - {"ef_search": 100}
       - {"ef_search": 256}
       - {"ef_search": 512}
-  cohere-768:
-    dataset_name: cohere-768-l2
-    download_url: https://huggingface.co/datasets/navneet1v/cohere-768-l2/resolve/main/cohere-768-l2.hdf5?download=true
+  ms-marco-384:
+    dataset_name: ms-marco-384
+    download_url: "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/ms_marco-384-1m.hdf5?download=true"
     normalize: false
     indexing-parameters:
-      - { "ef_construction": 100 }
+      - {"ef_construction": 100}
       - {"ef_construction": 256}
       - {"ef_construction": 512}
     search-parameters:
+      - {"ef_search": 100}
+      - {"ef_search": 256}
+      - {"ef_search": 512}
+  cohere-768-l2:
+    dataset_name: cohere-768-l2
+    download_url: https://huggingface.co/datasets/navneet1v/datasets/resolve/main/cohere-768-l2.hdf5?download=true
+    normalize: false
+    indexing-parameters:
+      - { "ef_construction": 100 }
+      - { "ef_construction": 256 }
+      - { "ef_construction": 512 }
+    search-parameters:
       - { "ef_search": 100 }
       - { "ef_search": 256 }
-      - {"ef_search": 512}
+      - { "ef_search": 512 }
+  cohere-768-ip:
+    dataset_name: cohere-768-ip
+    download_url: https://dbyiw3u3rf9yr.cloudfront.net/corpora/vectorsearch/cohere-wikipedia-22-12-en-embeddings/documents-1m.hdf5.bz2
+    compressed: true
+    compression-type: bz2
+    normalize: false
+    space-type: innerproduct
+    indexing-parameters:
+      - { "ef_construction": 100 }
+      - { "ef_construction": 256 }
+      - { "ef_construction": 512 }
+    search-parameters:
+      - { "ef_search": 100 }
+      - { "ef_search": 256 }
+      - { "ef_search": 512}
   gist-960:
     dataset_name: gist
     download_url: "http://ann-benchmarks.com/gist-960-euclidean.hdf5"

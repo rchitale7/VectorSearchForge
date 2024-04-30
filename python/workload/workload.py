@@ -61,6 +61,7 @@ def doIndexing(workloadToExecute: dict, datasetFile: str, indexType: IndexTypes)
     d, xb, ids = dataset_utils.prepare_indexing_dataset(datasetFile, workloadToExecute.get('normalize'))
     workloadToExecute["dimension"] = d
     workloadToExecute["vectorsCount"] = len(xb)
+    space_type = "L2" if workloadToExecute.get("space-type") is None else workloadToExecute.get("space-type")
     parameters_level_metrics = []
     for param in workloadToExecute['indexing-parameters']:
         prepare_env_for_indexing(workloadToExecute, indexType, param)
@@ -68,12 +69,12 @@ def doIndexing(workloadToExecute: dict, datasetFile: str, indexType: IndexTypes)
         logging.info(f"================ Running configuration: {param} ================")
         if indexType == IndexTypes.CPU:
             from python.indexing.cpu.create_cpu_index import indexData as indexDataInCpu
-            timingMetrics = indexDataInCpu(d, xb, ids, file_to_write=param["graph_file"])
+            timingMetrics = indexDataInCpu(d, xb, ids, param, space_type, file_to_write=param["graph_file"])
 
         if indexType == IndexTypes.GPU:
             param["pq_dim"] = int(d / param['compression_factor'])
             from python.indexing.gpu.create_gpu_index import indexData as indexDataInGpu
-            timingMetrics = indexDataInGpu(d, xb, ids, param, param["graph_file"])
+            timingMetrics = indexDataInGpu(d, xb, ids, param, space_type, param["graph_file"])
         logging.info(f"===== Timing Metrics : {timingMetrics} ====")
         logging.info(f"================ Completed configuration: {param} ================")
         parameters_level_metrics.append(

@@ -6,12 +6,14 @@ from timeit import default_timer as timer
 import math
 import numpy as np
 
-def indexData(d:int, xb:np.ndarray, ids:np.ndarray, indexingParams:dict={}, file_to_write:str="gpuIndex.cagra.graph"):
+def indexData(d:int, xb:np.ndarray, ids:np.ndarray, indexingParams:dict, space_type:str, file_to_write:str="gpuIndex.cagra.graph"):
     num_of_parallel_threads = get_omp_num_threads()
     logging.info(f"Setting number of parallel threads for graph build: {num_of_parallel_threads}")
     faiss.omp_set_num_threads(num_of_parallel_threads)
     res = faiss.StandardGpuResources()
-
+    metric = faiss.METRIC_L2
+    if space_type == "innerproduct":
+        metric = faiss.METRIC_INNER_PRODUCT
     cagraIndexConfig = faiss.GpuIndexCagraConfig()
     cagraIndexConfig.intermediate_graph_degree = 64 if indexingParams.get('intermediate_graph_degree') is None else indexingParams['intermediate_graph_degree']
     cagraIndexConfig.graph_degree = 32 if indexingParams.get('graph_degree') == None else indexingParams['graph_degree']
@@ -31,7 +33,7 @@ def indexData(d:int, xb:np.ndarray, ids:np.ndarray, indexingParams:dict={}, file
     cagraIndexConfig.ivf_pq_search_params = cagraIndexSearchIVFPQConfig
 
     print("Creating GPU Index.. with IVF_PQ")
-    cagraIVFPQIndex = faiss.GpuIndexCagra(res, d, faiss.METRIC_L2, cagraIndexConfig)
+    cagraIVFPQIndex = faiss.GpuIndexCagra(res, d, metric, cagraIndexConfig)
     idMapIVFPQIndex = faiss.IndexIDMap(cagraIVFPQIndex)
 
     t1 = timer()
