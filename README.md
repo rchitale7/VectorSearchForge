@@ -1,5 +1,96 @@
 # VectorSearchForge
 
+## Setting Up Environment on a GPU
+0. Install miniconda on the machine using link: https://docs.anaconda.com/free/miniconda/#quick-command-line-install
+1. Get latest conda dependencies list from https://github.com/rapidsai/raft file conda/environments/all_cuda-122_arch-x86_64.yaml in your local
+2. Run the below command to create then env with name raft_246, you can use any name here.
+```
+conda env create --name raft_246 --file all_cuda-122_arch-x86_64-24-06.yaml
+```
+3. Install right version of `libraft` in the env. Use `rapidsai-nightly` to get latest build and `rapidsai` for stable builds. Use `Optional-Libraft-Version` to set version of libraft you need.
+
+```
+conda install -y -q libraft=<Optional-Libraft-Version> -c rapidsai-nightly  -c conda-forge
+```
+4. Activate the env.
+```
+conda activate raft_246
+```
+
+## Updating Submodule
+```
+git submodule update --remote
+```
+
+## Build Package on GPU
+### Common for both C++ and Python
+Replace ENV_NAME with conda env name in the command.
+
+```
+cmake -B build . -DCMAKE_BUILD_TYPE=Release -DFAISS_ENABLE_RAFT=ON  -DBUILD_SHARED_LIBS=ON -DFAISS_ENABLE_PYTHON=ON -GNinja -DCMAKE_CUDA_ARCHITECTURES=80 -DCMAKE_INSTALL_PREFIX=${CONDA_PREFIX} -DFAISS_ENABLE_GPU=ON -DCUDAToolkit_ROOT="/home/ubuntu/miniconda3/envs/<ENV_NAME>/lib"
+```
+### C++ Test Code
+
+```
+cmake --build build --target cagra-gpu-index -j 10
+```
+
+### Python
+
+```
+pip install numpy  swig==4.0.0 h5py psutil
+```
+for versions >=4.2.0 the faiss swig build will fail. GH issue: https://github.com/facebookresearch/faiss/issues/3239
+
+```
+ninja -C build -j10 install faiss swigfaiss
+
+```
+
+```
+cd build/external/faiss/faiss/python && python3 setup.py build
+
+export PYTHONPATH="$(ls -d `pwd`/build/external/faiss/faiss/python/build/lib*/):`pwd`/"
+```
+
+## Running Benchmarks
+
+### Setup
+```
+export PYTHONPATH="$(ls -d `pwd`/build/external/faiss/faiss/python/build/lib*/):`pwd`/"
+```
+
+### Indexing GPU
+```
+python python/main.py --workload=sift-128 --index_type=gpu --workload_type=index
+```
+
+### Indexing CPU
+```
+python python/main.py --workload=sift-128 --index_type=cpu --workload_type=index
+```
+
+### Run Both indexing and search 
+
+*GPU*
+```
+python python/main.py --workload=gist-960 --index_type=gpu --workload_type=index_and_search
+```
+
+*CPU*
+```
+python python/main.py --workload=gist-960 --index_type=cpu --workload_type=index_and_search
+```
+
+### Exporting All results as CSV
+```
+python python/results.py --workload=all --index_type=gpu --workload_type=index_and_search
+```
+After this command the results will be stored under `results/all/all_results.csv`
+
+
+
+## Old 
 ### Setup C++
 #### Building all the CPP files on CPU and Run simple test
 ```
@@ -14,46 +105,8 @@ cmake --build cmake-build-debug --target faiss-test -j 10
 ./cmake-build-debug/cpp/faiss-test
 ```
 
-#### Building all the CPP files on GPU
-```
-
-cmake -B build . -DCMAKE_BUILD_TYPE=Release -DFAISS_ENABLE_RAFT=ON  -DBUILD_SHARED_LIBS=ON -DFAISS_ENABLE_PYTHON=ON -GNinja -DCMAKE_CUDA_ARCHITECTURES=80  -DFAISS_ENABLE_GPU=ON -DCUDAToolkit_ROOT="/home/ubuntu/miniconda3/envs/faiss-gpu/lib"
-```
-
-```
-cmake --build build --target cagra-gpu-index -j 10
-```
-
-### Updating Submodule
-```
-git submodule update --remote
-```
-
 ### CPU Python
 ```conda create -n faiss-cpu  python=3.8```
-
-#### For GPU
-```
-pip install numpy  swig==4.0.0 h5py psutil
-```
-for versions >=4.2.0 the faiss swig build will fail. GH issue: https://github.com/facebookresearch/faiss/issues/3239
-
-
-```
-cmake -B build . -DCMAKE_BUILD_TYPE=Release -DFAISS_ENABLE_RAFT=ON  -DBUILD_SHARED_LIBS=ON -DFAISS_ENABLE_PYTHON=ON -GNinja -DCMAKE_CUDA_ARCHITECTURES=80 -DCMAKE_INSTALL_PREFIX=${CONDA_PREFIX} -DFAISS_ENABLE_GPU=ON -DCUDAToolkit_ROOT="/home/ubuntu/miniconda3/envs/faiss-gpu/lib"
-```
-
-```
-ninja -C build -j10 install faiss swigfaiss
-
-```
-
-```
-cd build/external/faiss/faiss/python && python3 setup.py build
-
-export PYTHONPATH="$(ls -d `pwd`/build/external/faiss/faiss/python/build/lib*/):`pwd`/"
-```
-
 
 #### Not working For CPU
 ```
@@ -83,38 +136,3 @@ cd build/external/faiss/faiss/python && python3 setup.py build
 export PYTHONPATH="$(ls -d `pwd`/build/external/faiss/faiss/python/build/lib*/):`pwd`/"
 
 ```
-
-### Running Benchmarks
-
-#### Setup
-```
-export PYTHONPATH="$(ls -d `pwd`/build/external/faiss/faiss/python/build/lib*/):`pwd`/"
-```
-
-#### Indexing GPU
-```
-python python/main.py --workload=sift-128 --index_type=gpu --workload_type=index
-```
-
-#### Indexing CPU
-```
-python python/main.py --workload=sift-128 --index_type=cpu --workload_type=index
-```
-
-#### Run Both indexing and search 
-
-*GPU*
-```
-python python/main.py --workload=gist-960 --index_type=gpu --workload_type=index_and_search
-```
-
-*CPU*
-```
-python python/main.py --workload=gist-960 --index_type=cpu --workload_type=index_and_search
-```
-
-#### Exporting All results as CSV
-```
-python python/results.py --workload=all --index_type=gpu --workload_type=index_and_search
-```
-After this command the results will be stored under `results/all/all_results.csv`
