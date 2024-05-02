@@ -1,0 +1,49 @@
+name: faiss-cpu
+channels:
+  - defaults
+dependencies:
+  - _libgcc_mutex=0.1=main
+  - _openmp_mutex=5.1=51_gnu
+  - blas=1.0=openblas
+  - bzip2=1.0.8=h998d150_6
+  - c-ares=1.19.1=h998d150_0
+  - ca-certificates=2024.3.11=hd43f75c_0
+  - h5py=3.9.0=py311h47820c8_0
+  - hdf5=1.12.1=h2117f30_3
+  - krb5=1.20.1=h2e2fba8_1
+  - ld_impl_linux-aarch64=2.38=h8131f2d_1
+  - libcurl=8.5.0=hfa2bbb0_0
+  - libedit=3.1.20230828=h998d150_0
+  - libev=4.33=hfd63f10_1
+  - libffi=3.4.4=h419075a_0
+  - libgcc-ng=11.2.0=h1234567_1
+  - libgfortran-ng=11.2.0=h6e398d7_1
+  - libgfortran5=11.2.0=h1234567_1
+  - libgomp=11.2.0=h1234567_1
+  - libnghttp2=1.57.0=hb788212_0
+  - libopenblas=0.3.21=hc2e42e2_0
+  - libssh2=1.10.0=h6ac735f_3
+  - libstdcxx-ng=11.2.0=h1234567_1
+  - libuuid=1.41.5=h998d150_0
+  - ncurses=6.4=h419075a_0
+  - numpy=1.26.4=py311h82f920c_0
+  - numpy-base=1.26.4=py311h592f769_0
+  - openssl=3.0.13=h2f4d8fa_1
+  - pip=23.3.1=py311hd43f75c_0
+  - python=3.11.8=h4bb2201_0
+  - readline=8.2=h998d150_0
+  - setuptools=68.2.2=py311hd43f75c_0
+  - sqlite=3.41.2=h998d150_0
+  - tk=8.6.12=h241ca14_0
+  - tzdata=2024a=h04d1e81_0
+  - wheel=0.41.2=py311hd43f75c_0
+  - xz=5.4.6=h998d150_0
+  - zlib=1.2.13=h998d150_0
+  - pip:
+      - cmake==3.28.3
+      - packaging==24.0
+      - psutil==5.9.8
+      - pyyaml==6.0.1
+      - swig==4.0.0
+      - tqdm==4.66.2
+prefix: /home/ec2-user/miniconda/envs/faiss-cpu

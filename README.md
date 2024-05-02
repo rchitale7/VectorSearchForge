@@ -34,11 +34,6 @@ Replace ENV_NAME with conda env name in the command.
 ```
 cmake -B build . -DCMAKE_BUILD_TYPE=Release -DFAISS_ENABLE_RAFT=ON  -DBUILD_SHARED_LIBS=ON -DFAISS_ENABLE_PYTHON=ON -GNinja -DCMAKE_CUDA_ARCHITECTURES=80 -DCMAKE_INSTALL_PREFIX=${CONDA_PREFIX} -DFAISS_ENABLE_GPU=ON -DCUDAToolkit_ROOT="/home/ubuntu/miniconda3/envs/<ENV_NAME>/lib"
 ```
-### C++ Test Code
-
-```
-cmake --build build --target cagra-gpu-index -j 10
-```
 
 ### Python
 
@@ -54,9 +49,51 @@ ninja -C build -j10 install faiss swigfaiss
 
 ```
 cd build/external/faiss/faiss/python && python3 setup.py build
-
+```
+Now go to the root of the project.
+```
 export PYTHONPATH="$(ls -d `pwd`/build/external/faiss/faiss/python/build/lib*/):`pwd`/"
 ```
+
+## Setting up env for CPU Machine
+0. Install miniconda on the machine using link: https://docs.anaconda.com/free/miniconda/#quick-command-line-install
+1. Run the below command to create then env with name faiss-cpu, you can use any name here.
+```
+conda env create --name faiss-cpu --file linux_arm_cpu.yml
+```
+2. Now activate the env
+```
+conda activate faiss-cpu
+```
+## Build Package on CPU
+### Common for both C++ and Python
+Replace ENV_NAME with conda env name in the command.
+
+```
+cmake -B build . -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DFAISS_ENABLE_PYTHON=ON -DFAISS_ENABLE_GPU=OFF -DFAISS_ENABLE_RAFT=OFF"
+```
+
+
+### Python
+
+```
+pip install numpy  swig==4.0.0 h5py psutil
+```
+for versions >=4.2.0 the faiss swig build will fail. GH issue: https://github.com/facebookresearch/faiss/issues/3239
+
+```
+make -C build -j faiss swigfaiss
+```
+
+```
+cd build/external/faiss/faiss/python && python3 setup.py build
+```
+Now go to the root of the project.
+```
+export PYTHONPATH="$(ls -d `pwd`/build/external/faiss/faiss/python/build/lib*/):`pwd`/"
+```
+
+
 
 ## Running Benchmarks
 
@@ -111,7 +148,7 @@ cmake --build cmake-build-debug --target faiss-test -j 10
 ```
 
 ### CPU Python
-```conda create -n faiss-cpu  python=3.8```
+```conda create -n faiss-cpu  python=3.11.8```
 
 #### Not working For CPU
 ```
