@@ -2,12 +2,17 @@
 
 ## Setting Up Environment on a GPU
 0. Install miniconda on the machine using link: https://docs.anaconda.com/free/miniconda/#quick-command-line-install
-1. Get latest conda dependencies list from https://github.com/rapidsai/raft file conda/environments/all_cuda-122_arch-x86_64.yaml in your local
+1. Get latest conda dependencies list from https://github.com/rapidsai/raft file `conda/environments/all_cuda-122_arch-x86_64.yaml` in your local, or if you need all the correct dependenices you can use the `linux_x64_cuda12_raft24_06.yml`
 2. Run the below command to create then env with name raft_246, you can use any name here.
 ```
 conda env create --name raft_246 --file all_cuda-122_arch-x86_64-24-06.yaml
 ```
-3. Install right version of `libraft` in the env. Use `rapidsai-nightly` to get latest build and `rapidsai` for stable builds. Use `Optional-Libraft-Version` to set version of libraft you need.
+or
+```
+conda env create --name raft_246 --file linux_x64_cuda12_raft24_06.yml
+```
+
+3.(Not required if you use `linux_x64_cuda12_raft24_06.yml` in step 2) Install right version of `libraft` in the env. Use `rapidsai-nightly` to get latest build and `rapidsai` for stable builds. Use `Optional-Libraft-Version` to set version of libraft you need.
 
 ```
 conda install -y -q libraft=<Optional-Libraft-Version> -c rapidsai-nightly  -c conda-forge
