@@ -9,7 +9,11 @@ from python.search import search_indices
 from python.utils.common_utils import ensureDir
 import json
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S')
+
 
 
 def runWorkload(workloadName: dict, indexTypeStr: str, workloadType: WorkloadTypes):

@@ -14,6 +14,7 @@ def runIndicesSearch(xq, graphFile:str, param:dict, gt) -> dict:
     index:faiss.Index = loadGraphFromFile(graphFile)
     hnswParameters = faiss.SearchParametersHNSW()
     hnswParameters.efSearch = 100 if param.get('ef_search') is None else param['ef_search']
+    logging.info(f"Ef search is : {hnswParameters.efSearch}")
     k = 100 if param.get('K') is None else param['K']
     
     def search(xq, k, params):
