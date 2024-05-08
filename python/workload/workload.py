@@ -8,6 +8,7 @@ from python.dataset import dataset_utils
 from python.search import search_indices
 from python.utils.common_utils import ensureDir
 import json
+import time
 
 logging.basicConfig(
     level=logging.INFO,
@@ -87,6 +88,9 @@ def doIndexing(workloadToExecute: dict, datasetFile: str, indexType: IndexTypes)
                 "indexing-timingMetrics": timingMetrics
             }
         )
+        logging.info("Sleeping for 5 sec for better metrics capturing")
+        time.sleep(5)
+        
     del xb
     del ids
     return {
@@ -117,6 +121,8 @@ def doSearch(workloadToExecute: dict, datasetFile: str, indexType: IndexTypes):
                     "search-params": searchParam
                 }
             )
+            logging.info("Sleeping for 5 sec for better metrics capturing")
+            time.sleep(5)
     del xq
     del gt
     return {
