@@ -47,6 +47,8 @@ def ensureDir(dirPath:str):
         os.makedirs(dirPath)
 
 def formatTimingMetricsValue(value):
+    if value is None:
+        return 0
     return float(f"{value:.2f}")
 
 def readAllWorkloads():

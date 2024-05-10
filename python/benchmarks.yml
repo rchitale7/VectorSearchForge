@@ -66,6 +66,31 @@ gpu:
       - {"ef_search": 100}
       - {"ef_search": 256}
       - {"ef_search": 512}
+  open-ai-1536:
+    dataset_name: open-ai-1536-temp
+    download_url: "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/bigann-10M-with-gt.hdf5?download=true"
+    indexing-parameters:
+      - {"compression_factor": 4}
+      - {"compression_factor": 8}
+      - {"compression_factor": 16}
+      - {"compression_factor": 32}
+    search-parameters:
+      - {"ef_search": 100}
+      - {"ef_search": 256}
+      - {"ef_search": 512}
+  
+  bigAnn-10M-128:
+    dataset_name: bigAnn-10M
+    download_url: "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/bigann-10M-with-gt.hdf5?download=true"
+    indexing-parameters:
+      - {"compression_factor": 4}
+      - {"compression_factor": 8}
+      - {"compression_factor": 16}
+      - {"compression_factor": 32}
+    search-parameters:
+      - {"ef_search": 100}
+      - {"ef_search": 256}
+      - {"ef_search": 512}
 
 cpu:
   sift-128:
@@ -123,6 +148,28 @@ cpu:
     dataset_name: gist
     download_url: "http://ann-benchmarks.com/gist-960-euclidean.hdf5"
     normalize: false
+    indexing-parameters:
+      - {"ef_construction": 100}
+      - {"ef_construction": 256}
+      - {"ef_construction": 512}
+    search-parameters:
+      - {"ef_search": 100}
+      - {"ef_search": 256}
+      - {"ef_search": 512}
+  open-ai-1536:
+    dataset_name: open-ai-1536-temp
+    download_url: "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/bigann-10M-with-gt.hdf5?download=true"
+    indexing-parameters:
+      - {"ef_construction": 100}
+      - {"ef_construction": 256}
+      - {"ef_construction": 512}
+    search-parameters:
+      - {"ef_search": 100}
+      - {"ef_search": 256}
+      - {"ef_search": 512}
+  bigAnn-10M-128:
+    dataset_name: bigAnn-10M
+    download_url: "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/bigann-10M-with-gt.hdf5?download=true"
     indexing-parameters:
       - {"ef_construction": 100}
       - {"ef_construction": 256}

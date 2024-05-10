@@ -41,7 +41,7 @@ def indexData(d:int, xb:np.ndarray, ids:np.ndarray, indexingParams:dict, space_t
     t2 = timer()
     indexTime = t2 - t1
     t1 = timer()
-    writeCagraIndexOnFile(idMapIVFPQIndex, cagraIVFPQIndex, file_to_write)
+    writeIndexMetrics = writeCagraIndexOnFile(idMapIVFPQIndex, cagraIVFPQIndex, file_to_write)
     t2 = timer()
     writeIndexTime = t2 - t1
     # This will ensure that when destructors of the index is called the internal indexes are deleted too.
@@ -49,7 +49,11 @@ def indexData(d:int, xb:np.ndarray, ids:np.ndarray, indexingParams:dict, space_t
     idMapIVFPQIndex.own_fields = True
     del cagraIVFPQIndex
     del idMapIVFPQIndex
-    return {"indexTime": indexTime, "writeIndexTime": writeIndexTime, "totalTime": indexTime + writeIndexTime, "unit": "seconds" }
+    return {
+        "indexTime": indexTime, "writeIndexTime": writeIndexTime, "totalTime": indexTime + writeIndexTime, "unit": "seconds", 
+        "gpu-to-cpu-index-conversion-time": writeIndexMetrics["gpu-to-cpu-index-conversion-time"] ,
+        "write_to_file_time": writeIndexMetrics["write_to_file_time"]
+    }
 
 
 @timer_func
@@ -59,10 +63,21 @@ def indexDataInIndex(index: faiss.Index, ids, xb):
 
 @timer_func
 def writeCagraIndexOnFile(idMapIndex: faiss.Index, cagraIndex: faiss.GpuIndexCagra, outputFileName: str):
+    t1 = timer()
     cpuIndex = faiss.IndexHNSWCagra()
     # This will ensure that when destructors of the index is called the internal indexes are deleted too.
     cpuIndex.own_fields = True
     cagraIndex.copyTo(cpuIndex)
     idMapIndex.index = cpuIndex
+    t2 = timer()
+    conversion_time = t2 - t1
+    
+    t1 = timer()
     faiss.write_index(idMapIndex, outputFileName)
+    t2 = timer()
+    write_to_file_time = t2 - t1
     del cpuIndex
+    return {
+        "gpu-to-cpu-index-conversion-time": conversion_time,
+        "write_to_file_time": write_to_file_time
+    }
