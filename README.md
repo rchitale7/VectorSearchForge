@@ -56,12 +56,16 @@ export PYTHONPATH="$(ls -d `pwd`/build/external/faiss/faiss/python/build/lib*/):
 ```
 
 ## Setting up env for CPU Machine
-0. Install miniconda on the machine using link: https://docs.anaconda.com/free/miniconda/#quick-command-line-install
-1. Run the below command to create then env with name faiss-cpu, you can use any name here.
+0. Run the below commands to install the correct packages. Some of these things are optional(like tmux)
+```
+sudo yum install gcc-c++ gcc g++ tmux git zlib-devel openblas-devel gfortran python3-devel -y
+```
+1. Install miniconda on the machine using link: https://docs.anaconda.com/free/miniconda/#quick-command-line-install
+2. Run the below command to create then env with name faiss-cpu, you can use any name here.
 ```
 conda env create --name faiss-cpu --file linux_arm_cpu.yml
 ```
-2. Now activate the env
+3. Now activate the env
 ```
 conda activate faiss-cpu
 ```
@@ -175,6 +179,6 @@ make -C build -j faiss swigfaiss
 
 cd build/external/faiss/faiss/python && python3 setup.py build
 
-export PYTHONPATH="$(ls -d `pwd`/build/external/faiss/faiss/python/build/lib*/):`pwd`/"
+export PYTHONPATH="$(ls -d `pwd`/build/external/faiss/faiss/python/build/lib*/):`pwd`/:$(/usr/local/dcgm/bindings/python3)"
 
 ```
