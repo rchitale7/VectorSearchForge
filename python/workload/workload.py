@@ -63,7 +63,7 @@ def persistMetricsAsJson(workloadType: WorkloadTypes, allMetrics: dict, workload
 
 def doIndexing(workloadToExecute: dict, datasetFile: str, indexType: IndexTypes):
     logging.info("Run Indexing...")
-    d, xb, ids = dataset_utils.prepare_indexing_dataset(datasetFile, workloadToExecute.get('normalize'))
+    d, xb, ids = dataset_utils.prepare_indexing_dataset(datasetFile, workloadToExecute.get('normalize'), workloadToExecute.get('indexing-docs'))
     workloadToExecute["dimension"] = d
     workloadToExecute["vectorsCount"] = len(xb)
     space_type = "L2" if workloadToExecute.get("space-type") is None else workloadToExecute.get("space-type")
