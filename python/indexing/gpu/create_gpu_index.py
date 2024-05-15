@@ -51,7 +51,7 @@ def indexData(d:int, xb:np.ndarray, ids:np.ndarray, indexingParams:dict, space_t
     del idMapIVFPQIndex
     return {
         "indexTime": indexTime, "writeIndexTime": writeIndexTime, "totalTime": indexTime + writeIndexTime, "unit": "seconds", 
-        "gpu-to-cpu-index-conversion-time": writeIndexMetrics["gpu-to-cpu-index-conversion-time"] ,
+        "gpu_to_cpu_index_conversion_time": writeIndexMetrics["gpu_to_cpu_index_conversion_time"] ,
         "write_to_file_time": writeIndexMetrics["write_to_file_time"]
     }
 
@@ -78,6 +78,6 @@ def writeCagraIndexOnFile(idMapIndex: faiss.Index, cagraIndex: faiss.GpuIndexCag
     write_to_file_time = t2 - t1
     del cpuIndex
     return {
-        "gpu-to-cpu-index-conversion-time": conversion_time,
+        "gpu_to_cpu_index_conversion_time": conversion_time,
         "write_to_file_time": write_to_file_time
     }
