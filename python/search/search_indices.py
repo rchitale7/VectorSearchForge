@@ -11,7 +11,8 @@ import numpy as np
 from tqdm import tqdm
 
 def runIndicesSearch(xq, graphFile:str, param:dict, gt) -> dict:
-    index:faiss.Index = loadGraphFromFile(graphFile)
+    index:faiss.IndexIDMap = loadGraphFromFile(graphFile)
+    index.index.base_level_only = True
     hnswParameters = faiss.SearchParametersHNSW()
     hnswParameters.efSearch = 100 if param.get('ef_search') is None else param['ef_search']
     logging.info(f"Ef search is : {hnswParameters.efSearch}")

@@ -65,6 +65,8 @@ def indexDataInIndex(index: faiss.Index, ids, xb):
 def writeCagraIndexOnFile(idMapIndex: faiss.Index, cagraIndex: faiss.GpuIndexCagra, outputFileName: str):
     t1 = timer()
     cpuIndex = faiss.IndexHNSWCagra()
+    # This will ensure that we have faster conversion time
+    cpuIndex.base_level_only = True
     # This will ensure that when destructors of the index is called the internal indexes are deleted too.
     cpuIndex.own_fields = True
     cagraIndex.copyTo(cpuIndex)

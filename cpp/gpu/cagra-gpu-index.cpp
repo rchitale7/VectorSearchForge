@@ -7,7 +7,6 @@
 #include <faiss/gpu/GpuIndexCagra.h>
 #include <faiss/gpu/GpuResources.h>
 #include <faiss/gpu/StandardGpuResources.h>
-#include <faiss/gpu/test/TestUtils.h>
 #include <cstddef>
 #include <faiss/gpu/utils/CopyUtils.cuh>
 #include <faiss/gpu/utils/DeviceTensor.cuh>
@@ -22,12 +21,12 @@
 
 struct Options {
     Options() {
-        numTrain = 100;
-        dim = 50;
+        numTrain = 6000000;
+        dim = 768;
 
-        graphDegree = 16;
-        intermediateGraphDegree = 32;
-        buildAlgo = faiss::gpu::graph_build_algo::NN_DESCENT;
+        graphDegree = 32;
+        intermediateGraphDegree = 64;
+        buildAlgo = faiss::gpu::graph_build_algo::IVF_PQ;
 
         numQuery = 1;
         k = 5;
@@ -60,52 +59,64 @@ int main() {
     Options opt;
 
     std::vector<float> trainVecs;
+    trainVecs.reserve(opt.numTrain * opt.dim);
 
-    for(int i = 0 ; i < opt.numTrain; i++) {
-        for(int j = 0 ; j < opt.dim; j++) {
+    for(long long i = 0 ; i < opt.numTrain; i++) {
+        for(long long j = 0 ; j < opt.dim; j++) {
             trainVecs.push_back(i + j);
         }
     }
 
     std::vector<faiss::idx_t> ids;
-    for(int i = 0 ; i < opt.numTrain; i++) {
+    for(long long i = 0 ; i < opt.numTrain; i++) {
         ids.push_back(opt.numTrain - i);
     }
 
-    std::cout<<"Vector are: " << std::endl;
+    std::cout<<"Vector are: "<<trainVecs.size()/opt.dim<< std::endl;
 
-    for(int i = 0 ; i < opt.numTrain ; i ++) {
-        std::cout<<"Id " << ids[i] << " [";
-        for(int j = 0 ; j < opt.dim; j++) {
-            std::cout<<trainVecs[(i * opt.dim) + j] << ", ";
-        }
-        std::cout<<"]"<<std::endl;
-    }
+//    for(int i = 0 ; i < opt.numTrain ; i ++) {
+//        std::cout<<"Id " << ids[i] << " [";
+//        for(int j = 0 ; j < opt.dim; j++) {
+//            std::cout<<trainVecs[(i * opt.dim) + j] << ", ";
+//        }
+//        std::cout<<"]"<<std::endl;
+//    }
 
     // train gpu index
     faiss::gpu::StandardGpuResources res;
-    res.noTempMemory();
+    //res.noTempMemory();
 
     faiss::gpu::GpuIndexCagraConfig config;
     config.device = opt.device;
     config.graph_degree = opt.graphDegree;
     config.intermediate_graph_degree = opt.intermediateGraphDegree;
     config.build_algo = opt.buildAlgo;
+    faiss::gpu::IVFPQBuildCagraConfig ivfpqBuildCagraConfig;
+    ivfpqBuildCagraConfig.kmeans_n_iters = 10;
+    ivfpqBuildCagraConfig.n_lists = (int) sqrt((double) opt.numTrain);
+    ivfpqBuildCagraConfig.pq_bits = 8;
+    // 32x compression
+    ivfpqBuildCagraConfig.pq_dim = opt.dim / 32 ;
 
+    config.ivf_pq_params = &ivfpqBuildCagraConfig;
+    std::cout<<"Building graph: " << std::endl;
     faiss::gpu::GpuIndexCagra gpuIndex(
             &res, opt.dim, faiss::METRIC_L2, config);
-    faiss::IndexIDMap idMapIndex = faiss::IndexIDMap(&gpuIndex);
-
+    gpuIndex.train(opt.numTrain, trainVecs.data());
+    //faiss::IndexIDMap idMapIndex = faiss::IndexIDMap(&gpuIndex);
+    //std::cout<<"Adding ids: " << std::endl;
     // Train the index
-    idMapIndex.add_with_ids(opt.numTrain, trainVecs.data(), ids.data());
-
+    //idMapIndex.add_with_ids(opt.numTrain, trainVecs.data(), ids.data());
+    trainVecs.clear();
+    std::cout<<"Added ids: " << std::endl;
     faiss::IndexHNSWCagra cpuCagraIndex;
+    std::cout<<"Converting to CPU graph: " << std::endl;
+    //faiss::gpu::GpuIndexCagra *mappedGpuIndex = dynamic_cast<faiss::gpu::GpuIndexCagra*>(gpuIndex);
+    gpuIndex.copyTo(&cpuCagraIndex);
 
-    faiss::gpu::GpuIndexCagra *mappedGpuIndex = dynamic_cast<faiss::gpu::GpuIndexCagra*>(idMapIndex.index);
-    mappedGpuIndex->copyTo(&cpuCagraIndex);
-    idMapIndex.index = &cpuCagraIndex;
+    //idMapIndex.index = &cpuCagraIndex;
 
-    auto *indexToBeWritten = dynamic_cast<faiss::Index*>(&idMapIndex);
+    auto *indexToBeWritten = dynamic_cast<faiss::Index*>(&cpuCagraIndex);
     faiss::write_index(indexToBeWritten, "/tmp/cagraindex-test-with-ids.txt");
     std::cout<<"index is written"<<std::endl;
     return 0;
