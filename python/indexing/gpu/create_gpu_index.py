@@ -18,6 +18,7 @@ def indexData(d:int, xb:np.ndarray, ids:np.ndarray, indexingParams:dict, space_t
     cagraIndexConfig.intermediate_graph_degree = 64 if indexingParams.get('intermediate_graph_degree') is None else indexingParams['intermediate_graph_degree']
     cagraIndexConfig.graph_degree = 32 if indexingParams.get('graph_degree') == None else indexingParams['graph_degree']
     cagraIndexConfig.device = faiss.get_num_gpus() - 1
+    cagraIndexConfig.store_dataset = False
 
     cagraIndexConfig.build_algo = faiss.graph_build_algo_IVF_PQ
     cagraIndexIVFPQConfig = faiss.IVFPQBuildCagraConfig()

@@ -54,6 +54,24 @@ gpu:
       - {"ef_search": 100}
       - {"ef_search": 256}
       - {"ef_search": 512}
+  cohere-10M-768-ip:
+    dataset_name: cohere-10M-768-ip
+    download_url: https://dbyiw3u3rf9yr.cloudfront.net/corpora/vectorsearch/cohere-wikipedia-22-12-en-embeddings/documents-10m.hdf5.bz2
+    compressed: true
+    compression-type: bz2
+    normalize: false
+    space-type: innerproduct
+    indexing-docs: 4000000
+    useTrain: true
+    indexing-parameters:
+      # - {"compression_factor": 4}
+      # - {"compression_factor": 8}
+      # - {"compression_factor": 16}
+      - {"compression_factor": 32}
+    search-parameters:
+      - {"ef_search": 100}
+      - {"ef_search": 256}
+      - {"ef_search": 512}
   gist-960:
     dataset_name: gist
     download_url: "http://ann-benchmarks.com/gist-960-euclidean.hdf5"
@@ -144,6 +162,21 @@ cpu:
       - { "ef_search": 100 }
       - { "ef_search": 256 }
       - { "ef_search": 512}
+  cohere-10M-768-ip:
+    dataset_name: cohere-10M-768-l2
+    download_url: https://dbyiw3u3rf9yr.cloudfront.net/corpora/vectorsearch/cohere-wikipedia-22-12-en-embeddings/documents-10m.hdf5.bz2
+    compressed: true
+    compression-type: bz2
+    normalize: false
+    space-type: innerproduct
+    indexing-parameters:
+      - { "ef_construction": 100 }
+      - { "ef_construction": 256 }
+      - { "ef_construction": 512 }
+    search-parameters:
+      - {"ef_search": 100}
+      - {"ef_search": 256}
+      - {"ef_search": 512}
   gist-960:
     dataset_name: gist
     download_url: "http://ann-benchmarks.com/gist-960-euclidean.hdf5"

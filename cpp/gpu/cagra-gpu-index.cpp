@@ -91,6 +91,7 @@ int main() {
     config.graph_degree = opt.graphDegree;
     config.intermediate_graph_degree = opt.intermediateGraphDegree;
     config.build_algo = opt.buildAlgo;
+    config.store_dataset = false;
     faiss::gpu::IVFPQBuildCagraConfig ivfpqBuildCagraConfig;
     ivfpqBuildCagraConfig.kmeans_n_iters = 10;
     ivfpqBuildCagraConfig.n_lists = (int) sqrt((double) opt.numTrain);
