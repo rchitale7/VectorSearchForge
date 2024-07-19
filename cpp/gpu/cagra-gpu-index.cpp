@@ -21,7 +21,7 @@
 
 struct Options {
     Options() {
-        numTrain = 6000000;
+        numTrain = 10000000;
         dim = 768;
 
         graphDegree = 32;
@@ -45,8 +45,8 @@ struct Options {
         return str.str();
     }
 
-    int numTrain;
-    int dim;
+    long numTrain;
+    long dim;
     size_t graphDegree;
     size_t intermediateGraphDegree;
     faiss::gpu::graph_build_algo buildAlgo;
@@ -58,12 +58,12 @@ struct Options {
 int main() {
     Options opt;
 
-    std::vector<float> trainVecs;
-    trainVecs.reserve(opt.numTrain * opt.dim);
+    std::vector<float> *trainVecs = new std::vector<float>();;
+    trainVecs->reserve(opt.numTrain * opt.dim);
 
     for(long long i = 0 ; i < opt.numTrain; i++) {
         for(long long j = 0 ; j < opt.dim; j++) {
-            trainVecs.push_back(i + j);
+            trainVecs->push_back(i + j);
         }
     }
 
@@ -72,7 +72,7 @@ int main() {
         ids.push_back(opt.numTrain - i);
     }
 
-    std::cout<<"Vector are: "<<trainVecs.size()/opt.dim<< std::endl;
+    std::cout<<"Vector are: "<<trainVecs->size()/opt.dim<< std::endl;
 
 //    for(int i = 0 ; i < opt.numTrain ; i ++) {
 //        std::cout<<"Id " << ids[i] << " [";
@@ -103,12 +103,13 @@ int main() {
     std::cout<<"Building graph: " << std::endl;
     faiss::gpu::GpuIndexCagra gpuIndex(
             &res, opt.dim, faiss::METRIC_L2, config);
-    gpuIndex.train(opt.numTrain, trainVecs.data());
+    gpuIndex.train(opt.numTrain, trainVecs->data());
     //faiss::IndexIDMap idMapIndex = faiss::IndexIDMap(&gpuIndex);
     //std::cout<<"Adding ids: " << std::endl;
     // Train the index
     //idMapIndex.add_with_ids(opt.numTrain, trainVecs.data(), ids.data());
-    trainVecs.clear();
+    //trainVecs.clear();
+    delete trainVecs;
     std::cout<<"Added ids: " << std::endl;
     faiss::IndexHNSWCagra cpuCagraIndex;
     std::cout<<"Converting to CPU graph: " << std::endl;
