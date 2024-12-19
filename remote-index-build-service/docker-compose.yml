@@ -1,0 +1,23 @@
+version: '3.3'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: remote-index-build-service
+    container_name: remote-index-build-service
+    ports:
+      - "5000:5000"
+    environment:
+    # Set environment variables
+    # remove these variables for production
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./logs:/app/logs
+    user: appuser
+    command: python app.py
+
+volumes:
+  logs:
