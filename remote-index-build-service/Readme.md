@@ -1,5 +1,5 @@
-# Build the Docker image
-docker build -t remote-index-build-service .
+# Build the Docker image via docker compose
+docker compose build
 
-# Run the container
-docker run -p 5000:5000 -v $(pwd)/logs:/app/logs remote-index-build-service 
+# Run the container via docker compose
+docker compose up 

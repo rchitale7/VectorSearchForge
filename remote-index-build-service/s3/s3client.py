@@ -1,26 +1,42 @@
 import boto3
 import os
 import tempfile
-from botocore.exceptions import ClientError
 from pathlib import Path
 from botocore.exceptions import ClientError
 
+s3_client = boto3.client('s3')
+
 def check_s3_object_exists(bucket_name, object_key):
-    s3 = boto3.client('s3')
-    
+    """
+    Check if an object exists in an S3 bucket.
+
+    This function performs a HEAD request on the S3 object to verify its existence
+    without downloading the object content. It handles the AWS ClientError exception
+    to determine if the object exists.
+
+    Args:
+        bucket_name (str): The name of the S3 bucket to check.
+        object_key (str): The key (path) of the object within the bucket.
+
+    Returns:
+        bool: True if the object exists, False if it doesn't.
+
+    Raises:
+        botocore.exceptions.ClientError: If there's an error other than 404 (like permissions issues,
+            invalid bucket name, network problems, etc.)
+    """
     try:
-        s3.head_object(Bucket=bucket_name, Key=object_key)
+        s3_client.head_object(Bucket=bucket_name, Key=object_key)
         return True
     except ClientError as e:
         if e.response['Error']['Code'] == '404':
             return False
         raise
 
-
-
 def download_s3_file_in_chunks(bucket_name, object_key, chunk_size=1024*1024):  # 1MB chunks
     """
-    Download a file from S3 in chunks and save to temp directory
+    Download a file from S3 in chunks and save to temp directory.
+    TODO: This is downloading the file in sequence. We will make this in parallel in next iteration
     
     Args:
         bucket_name (str): The S3 bucket name
@@ -30,7 +46,6 @@ def download_s3_file_in_chunks(bucket_name, object_key, chunk_size=1024*1024):  
     Returns:
         str: Path to the downloaded file in temp directory
     """
-    s3_client = boto3.client('s3')
     
     try:
         # Get object details
@@ -71,14 +86,12 @@ def download_s3_file_in_chunks(bucket_name, object_key, chunk_size=1024*1024):  
             print(f"Error downloading object: {e}")
             
         # Clean up temp file if it exists
-        if 'temp_file_path' in locals() and os.path.exists(temp_file_path):
-            os.unlink(temp_file_path)
+        cleanup_temp_file(temp_file_path)
         raise
     except Exception as e:
         print(f"Unexpected error: {e}")
         # Clean up temp file if it exists
-        if 'temp_file_path' in locals() and os.path.exists(temp_file_path):
-            os.unlink(temp_file_path)
+        cleanup_temp_file(temp_file_path)
         raise
 
 def cleanup_temp_file(temp_file_path):
