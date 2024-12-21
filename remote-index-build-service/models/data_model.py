@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass
-import json
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class CreateIndexRequest:
@@ -10,12 +11,11 @@ class CreateIndexRequest:
     dimensions: int
 
 def build_create_index_request(data: dict) -> CreateIndexRequest:
-    if not all(key in data for key in ['bucketName', 'objectLocation', 'numberOfVectors', 'dimensions']):
+    if not all(key in data for key in ['bucket_name', 'object_location', 'number_of_vectors', 'dimensions']):
         raise ValueError("Missing required fields in JSON data")
-
     return CreateIndexRequest(
-        bucketName=data['bucketName'],
-        objectLocation=data['objectLocation'],
-        numberOfVectors=int(data['numberOfVectors']),
+        bucketName=data['bucket_name'],
+        objectLocation=data['object_location'],
+        numberOfVectors=int(data['number_of_vectors']),
         dimensions=int(data['dimensions'])
     )
