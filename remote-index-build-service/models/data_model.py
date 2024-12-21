@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from enum import Enum
 
 logger = logging.getLogger(__name__)
 
@@ -19,3 +20,27 @@ def build_create_index_request(data: dict) -> CreateIndexRequest:
         numberOfVectors=int(data['number_of_vectors']),
         dimensions=int(data['dimensions'])
     )
+
+class ExtendedEnum(Enum):
+
+    @classmethod
+    def list(cls):
+        return list(map(lambda c: c.value, cls))
+
+    @classmethod
+    def enumList(cls):
+        return list(map(lambda c: c, cls))
+
+
+class IndexTypes(ExtendedEnum):
+    CPU = 'cpu'
+    GPU = 'gpu'
+
+    @staticmethod
+    def from_str(labelstr: str) -> 'IndexTypes':
+        if labelstr in 'cpu':
+            return IndexTypes.CPU
+        elif labelstr in 'gpu':
+            return IndexTypes.GPU
+        else:
+            raise NotImplementedError

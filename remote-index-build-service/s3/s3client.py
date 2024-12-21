@@ -1,5 +1,4 @@
 import traceback
-from asyncio import as_completed
 from concurrent.futures.thread import ThreadPoolExecutor
 
 import boto3
