@@ -1,10 +1,13 @@
 import traceback
+from asyncio import as_completed
+from concurrent.futures.thread import ThreadPoolExecutor
 
 import boto3
 import os
 import tempfile
 from pathlib import Path
 from botocore.exceptions import ClientError
+import math
 
 import logging
 
@@ -114,3 +117,132 @@ def cleanup_temp_file(temp_file_path):
             logger.info(f"Temporary file removed: {temp_file_path}")
     except Exception as e:
         logger.error(f"Error removing temporary file: {traceback.format_exc()} {e}")
+
+
+
+"""
+Initialize uploader with configuration
+
+Args:
+    bucket_name: S3 bucket name
+    max_workers: Maximum number of concurrent upload threads
+    chunk_size: Size of each chunk in bytes (default 8MB)
+"""
+max_workers = os.cpu_count() - 2 # This can be dynamic
+chunk_size = 1*1024*1024*1024 # 1GB chunk
+
+def upload_file(file_path, object_key, bucket_name, metadata=None):
+    """
+    Upload a file to S3 using parallel multipart upload
+
+    Args:
+        file_path: Local path to file
+        object_key: S3 object key
+        bucket_name: name of the bucket
+        metadata: Optional metadata dictionary
+    """
+    file_size = os.path.getsize(file_path)
+
+    try:
+        # Initialize multipart upload
+        response = s3_client.create_multipart_upload(
+            Bucket=bucket_name,
+            Key=object_key,
+            Metadata=metadata or {}
+        )
+        upload_id = response['UploadId']
+
+        # Calculate parts
+        num_parts = math.ceil(file_size / chunk_size)
+        parts = []
+
+        # Upload parts in parallel
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = []
+
+            for part_number in range(1, num_parts + 1):
+                start_byte = (part_number - 1) * chunk_size
+                end_byte = min(start_byte + chunk_size, file_size)
+
+                futures.append(
+                    executor.submit(
+                        upload_part,
+                        file_path,
+                        bucket_name,
+                        object_key,
+                        upload_id,
+                        part_number,
+                        start_byte,
+                        end_byte
+                    )
+                )
+
+            # Process completed parts
+            for future in futures:
+                part = future.result()
+                parts.append(part)
+
+        # Complete multipart upload
+        parts.sort(key=lambda x: x['PartNumber'])
+        s3_client.complete_multipart_upload(
+            Bucket=bucket_name,
+            Key=object_key,
+            UploadId=upload_id,
+            MultipartUpload={'Parts': parts}
+        )
+
+        logger.info(f"Successfully uploaded {file_path} to {object_key}")
+        return True
+
+    except Exception as e:
+        logger.error(f"Error uploading file {file_path}: {str(e)}")
+        # Abort multipart upload if it was initialized
+        if 'upload_id' in locals():
+            _abort_multipart_upload(object_key, upload_id, bucket_name)
+        raise
+
+def _abort_multipart_upload(object_key, upload_id, bucket_name):
+    """Abort a multipart upload"""
+    try:
+        s3_client.abort_multipart_upload(
+            Bucket=bucket_name,
+            Key=object_key,
+            UploadId=upload_id
+        )
+    except Exception as e:
+        logger.error(f"Error aborting multipart upload: {str(e)}")
+
+def upload_part(file_path, bucket_name, object_key, upload_id, part_number, start_byte, end_byte):
+    """Upload a single part of the file"""
+    client = s3_client
+
+    retries = 3
+    while retries > 0:
+        try:
+            with open(file_path, 'rb') as f:
+                f.seek(start_byte)
+                file_data = f.read(end_byte - start_byte)
+
+            response = client.upload_part(
+                Bucket=bucket_name,
+                Key=object_key,
+                PartNumber=part_number,
+                UploadId=upload_id,
+                Body=file_data
+            )
+
+            return {
+                'PartNumber': part_number,
+                'ETag': response['ETag']
+            }
+
+        except Exception as e:
+            retries -= 1
+            if retries == 0:
+                logger.error(
+                    f"Failed to upload part {part_number} after 3 attempts: {str(e)}"
+                )
+                raise
+            logger.warning(
+                f"Retrying upload of part {part_number}. Attempts remaining: {retries}"
+            )

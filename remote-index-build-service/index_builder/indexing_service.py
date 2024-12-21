@@ -5,7 +5,7 @@ from typing import Dict, Any
 import threading
 import logging
 
-from index_builder.vector_index_builder import build_index
+from index_builder.vector_index_builder import build_index_and_upload_index
 from models.data_model import CreateIndexRequest
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ class IndexingService:
                 status="running"
             )
             # create the index
-            result = build_index(create_index_request)
+            result = build_index_and_upload_index(create_index_request)
 
             self.update_job_status(
                 job_id,
