@@ -51,15 +51,15 @@ def hello():
     })
 
 
-@app.route('/status/<string:job_id>')
-def status(job_id: str):
-    job = indexing_service.get_job_status(job_id)
-    if job is None:
+@app.route('/job/<string:job_id>')
+def job(job_id: str):
+    job_deatils = indexing_service.get_job_status(job_id)
+    if job_deatils is None:
         return jsonify({"error": f"Job not found with Id {job_id}"}), 404
     return jsonify({
-        "status": job.status,
-        "result": job.result,
-        "error": job.error
+        "status": job_deatils.status,
+        "result": job_deatils.result,
+        "error": job_deatils.error
     })
 
 
@@ -86,4 +86,4 @@ def create_index():
 
 
 if __name__ == '__main__':
-    serve(app, host="0.0.0.0", port=5005)
+    serve(app, host="0.0.0.0", port=6005)

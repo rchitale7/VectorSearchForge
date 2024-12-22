@@ -41,7 +41,7 @@ def check_s3_object_exists(bucket_name, object_key):
             return False
         raise
 
-def download_s3_file_in_chunks(bucket_name, object_key, chunk_size=1024*1024):  # 1MB chunks
+def download_s3_file_in_chunks(bucket_name, object_key, chunk_size=1024*1024*10):  # 10MB chunks
     """
     Download a file from S3 in chunks and save to temp directory.
     TODO: This is downloading the file in sequence. We will make this in parallel in next iteration
@@ -74,6 +74,7 @@ def download_s3_file_in_chunks(bucket_name, object_key, chunk_size=1024*1024):  
             logger.info(f"Downloading {object_key} to {temp_file_path}")
             
             # Download and write chunks
+            # This needs to be parallelized
             for chunk in response['Body'].iter_chunks(chunk_size=chunk_size):
                 f.write(chunk)
                 downloaded += len(chunk)
@@ -120,15 +121,11 @@ def cleanup_temp_file(temp_file_path):
 
 
 """
-Initialize uploader with configuration
-
-Args:
-    bucket_name: S3 bucket name
-    max_workers: Maximum number of concurrent upload threads
-    chunk_size: Size of each chunk in bytes (default 8MB)
+max_workers: Maximum number of concurrent upload threads
+chunk_size: Size of each chunk in bytes (default 1GB)
 """
 max_workers = os.cpu_count() - 2 # This can be dynamic
-chunk_size = 1*1024*1024*1024 # 1GB chunk
+chunk_size = 1024*1024*10 # 10MB chunk
 
 def upload_file(file_path, object_key, bucket_name, metadata=None):
     """

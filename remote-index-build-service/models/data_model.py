@@ -11,6 +11,12 @@ class CreateIndexRequest:
     numberOfVectors: int
     dimensions: int
 
+@dataclass
+class CreateIndexResponse:
+    bucketName: str
+    graphFileLocation: str
+    stats: dict
+
 def build_create_index_request(data: dict) -> CreateIndexRequest:
     if not all(key in data for key in ['bucket_name', 'object_location', 'number_of_vectors', 'dimensions']):
         raise ValueError("Missing required fields in JSON data")

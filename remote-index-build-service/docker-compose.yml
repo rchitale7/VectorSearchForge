@@ -8,7 +8,7 @@ services:
     image: remote-index-build-service
     container_name: remote-index-build-service
     ports:
-      - "5005:5005"
+      - "6005:6005"
     environment:
     # Set environment variables
     # remove these variables for production

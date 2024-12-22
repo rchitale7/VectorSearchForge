@@ -6,7 +6,7 @@ import threading
 import logging
 
 from index_builder.vector_index_builder import build_index_and_upload_index
-from models.data_model import CreateIndexRequest
+from models.data_model import CreateIndexRequest, CreateIndexResponse
 
 logger = logging.getLogger(__name__)
 executor = ThreadPoolExecutor(max_workers=5)
@@ -48,7 +48,7 @@ class IndexingService:
         executor.submit(self._run_job, job_id, create_index_request)
         logger.info(f"Job started {job_id}")
 
-    def _run_job(self, job_id, create_index_request):
+    def _run_job(self, job_id, create_index_request:CreateIndexRequest):
         try:
             logger.info(f"Starting index creation for job {job_id}")
             self.update_job_status(
@@ -56,7 +56,9 @@ class IndexingService:
                 status="running"
             )
             # create the index
-            result = build_index_and_upload_index(create_index_request)
+            graph_file, stats = build_index_and_upload_index(create_index_request)
+
+            result = CreateIndexResponse(bucketName=create_index_request.bucketName, graphFileLocation=graph_file, stats=stats)
 
             self.update_job_status(
                 job_id,
