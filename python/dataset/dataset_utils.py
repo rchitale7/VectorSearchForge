@@ -54,12 +54,12 @@ def decompress_dataset(filePath:str, compressionType:str, outputFile:str):
 
 
 @timer_func
-def prepare_indexing_dataset(datasetFile: str, normalize: bool = None, docToRead:int = None) -> tuple[int, np.ndarray, list]:
+def prepare_indexing_dataset(datasetFile: str, normalize: bool = None, docToRead:int = -1) -> tuple[int, np.ndarray, list]:
     logging.info(f"Reading data set from file: {datasetFile}")
     index_dataset: HDF5DataSet = HDF5DataSet(datasetFile, Context.INDEX)
-    docToRead = index_dataset.size() if docToRead is None else docToRead
-    logging.info(f"Total number of docs that we will read for indexing: {docToRead}")
-    xb: np.ndarray = index_dataset.read(docToRead)
+
+    logging.info(f"Total number of docs that we will read for indexing: {index_dataset.size() if docToRead == -1 else docToRead}")
+    xb: np.ndarray = index_dataset.read(index_dataset.size() if docToRead == -1 else docToRead)
     d: int = len(xb[0])
     ids = [i for i in range(len(xb))]
     if normalize:

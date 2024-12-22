@@ -62,11 +62,10 @@ gpu:
     normalize: false
     space-type: innerproduct
     indexing-docs: 4000000
-    useTrain: true
     indexing-parameters:
-      # - {"compression_factor": 4}
-      # - {"compression_factor": 8}
-      # - {"compression_factor": 16}
+      - {"compression_factor": 4}
+      - {"compression_factor": 8}
+      - {"compression_factor": 16}
       - {"compression_factor": 32}
     search-parameters:
       - {"ef_search": 100}
