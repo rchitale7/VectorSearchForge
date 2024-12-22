@@ -46,7 +46,7 @@ indexing_service = IndexingService()
 @app.route('/')
 def hello():
     return jsonify({
-        "message": "Hello from Vector Index Build Service!",
+        "message": "Hello from Vector Index Build Service Worker!",
         "timestamp": datetime.now().isoformat()
     })
 

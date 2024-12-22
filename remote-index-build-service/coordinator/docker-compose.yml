@@ -1,0 +1,21 @@
+services:
+  coordinator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: remote-index-build-service-coordinator
+    container_name: remote-index-build-service-coordinator
+    ports:
+      - "6006:6006"
+    environment:
+    # Set environment variables
+    # remove these variables for production
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./logs:/app/logs
+    user: appuser
+    command: python app.py
+
+volumes:
+  logs:

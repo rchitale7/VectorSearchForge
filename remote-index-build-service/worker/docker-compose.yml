@@ -1,7 +1,7 @@
 services:
   worker:
     build:
-      context: ./worker
+      context: .
       dockerfile: Dockerfile
     image: remote-index-build-service-worker
     container_name: remote-index-build-service-worker
@@ -17,25 +17,7 @@ services:
       - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
       - INDEX_BUILD_TYPE=${INDEX_BUILD_TYPE} # valid values cpu, gpu
     volumes:
-      - ./worker/logs:/app/logs
-    user: appuser
-    command: python app.py
-
-  coordinator:
-    build:
-      context: ./coordinator
-      dockerfile: Dockerfile
-    image: remote-index-build-service-coordinator
-    container_name: remote-index-build-service-coordinator
-    ports:
-      - "6006:6006"
-    environment:
-      # Set environment variables
-      # remove these variables for production
-      - PYTHONDONTWRITEBYTECODE=1
-      - PYTHONUNBUFFERED=1
-    volumes:
-      - ./coordinator/logs:/app/logs
+      - ./logs:/app/logs
     user: appuser
     command: python app.py
 

@@ -1,0 +1,5 @@
+flask==2.3.3
+waitress==3.0.2
+boto3==1.35.84
+numpy==2.2.0
+faiss-cpu==1.9.0.post1
