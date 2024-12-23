@@ -1,0 +1,23 @@
+FROM nvidia/cuda:12.1.1-base-ubuntu22.04
+
+# Install base utilities and also the dependencies for faiss
+RUN apt-get update \
+    && apt-get install -y build-essential gfortran libblas-dev libopenblas-base zlib1g zlib1g-dev \
+    && apt-get install -y wget \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install miniconda
+ENV CONDA_DIR /opt/conda
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+    /bin/bash ~/miniconda.sh -b -p /opt/conda
+
+# Put conda in path so we can use conda activate
+ENV PATH=$CONDA_DIR/bin:$PATH
+
+# install all the faiss dependencies
+RUN conda install -c pytorch -c nvidia -c rapidsai -c conda-forge python=3.11 faiss-gpu-raft=1.9.0 -y
+
+COPY faiss-test.py /tmp
+
+CMD ["sh", "-c", "nvidia-smi && sleep 3600"]
