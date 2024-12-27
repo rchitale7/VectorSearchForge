@@ -2,3 +2,6 @@
 	path = external/faiss
 	url = https://github.com/navneet1v/faiss.git
 	branch = raft-cagra-hnsw
+[submodule "custom-faiss-installed-image/faiss"]
+	path = custom-faiss-installed-image/faiss
+	url = https://github.com/facebookresearch/faiss.git
