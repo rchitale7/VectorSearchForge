@@ -16,7 +16,8 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 ENV PATH=$CONDA_DIR/bin:$PATH
 
 # install all the faiss dependencies
-RUN conda install -c pytorch -c nvidia -c rapidsai -c conda-forge python=3.11 faiss-gpu-raft=1.9.0 -y
+#RUN conda install -c pytorch -c nvidia -c rapidsai -c conda-forge python=3.11 faiss-gpu-raft=1.9.0 -y
+RUN conda install -c pytorch -c rapidsai -c conda-forge -c nvidia python=3.11  pytorch/label/nightly::faiss-gpu-cuvs 'cuda-version>=12.0,<=12.5'
 
 COPY faiss-test.py /tmp
 
