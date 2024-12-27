@@ -11,6 +11,10 @@ class VectorsDataset:
     ids: np.array
     dimensions: int
 
+    def free_vectors_space(self):
+        del self.vectors
+        del self.ids
+
     @staticmethod
     def get_vector_dataset(createIndexRequest: CreateIndexRequest):
         if not s3.check_s3_object_exists(createIndexRequest.bucketName, createIndexRequest.objectLocation):

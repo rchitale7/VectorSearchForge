@@ -1,9 +1,10 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from datetime import datetime
-
+import json
 import logging
 from logging.handlers import RotatingFileHandler
 from waitress import serve
+from client.worker_client import WorkerService, Worker
 
 # Create logger
 logger = logging.getLogger()
@@ -34,12 +35,50 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
+def get_worker_from_seed_file(seed_file):
+    with open(seed_file, 'r') as f:
+        data = json.load(f)
+        workers = []
+        for worker in data:
+            workers.append(Worker(worker['host'], worker['port']))
+        logging.info(f"Workers are: {workers}")
+        return workers
+
+workers = get_worker_from_seed_file("workers_seed.json")
+workerservice = WorkerService(workers=workers)
+
 @app.route('/')
 def hello():
     return jsonify({
         "message": "Hello from Vector Index Build Service Coordinator!",
         "timestamp": datetime.now().isoformat()
     })
+
+@app.route('/create_index', methods=['POST'])
+def create_index():
+    try:
+        input = request.json
+        response = workerservice.create_index(input)
+        logger.info(f"Response is: {response}")
+        return json.dumps(response, default=lambda o: o.__dict__, indent=4)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/jobs', methods=['GET'])
+def get_jobs():
+    try:
+        return workerservice.get_jobs()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/job/<string:job_id>')
+def job(job_id: str):
+    try:
+        jobs = workerservice.get_job(job_id)
+        return json.dumps(jobs, default=lambda o: o.__dict__, indent=4)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     serve(app, host="0.0.0.0", port=6006)

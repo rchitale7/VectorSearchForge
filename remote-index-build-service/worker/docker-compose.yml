@@ -5,6 +5,8 @@ services:
       dockerfile: Dockerfile
     image: remote-index-build-service-worker
     container_name: remote-index-build-service-worker
+    networks:
+      - remote-index-build-service-network
     ports:
       - "6005:6005"
     environment:

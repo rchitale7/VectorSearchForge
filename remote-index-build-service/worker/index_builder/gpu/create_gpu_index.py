@@ -35,6 +35,7 @@ def create_index(vectorsDataset:VectorsDataset, indexingParams:dict, space_type:
     cagraIndexIVFPQConfig.pq_dim = 32 if indexingParams.get('pq_dim') == None else indexingParams['pq_dim']
     cagraIndexIVFPQConfig.n_lists = int(math.sqrt(dataset_size)) if indexingParams.get('n_lists') == None else indexingParams['n_lists']
     cagraIndexIVFPQConfig.kmeans_trainset_fraction = 10 if indexingParams.get('kmeans_trainset_fraction') == None else indexingParams['kmeans_trainset_fraction']
+    cagraIndexIVFPQConfig.conservative_memory_allocation = True
     cagraIndexConfig.ivf_pq_params = cagraIndexIVFPQConfig
 
     cagraIndexSearchIVFPQConfig = faiss.IVFPQSearchCagraConfig()
@@ -49,6 +50,10 @@ def create_index(vectorsDataset:VectorsDataset, indexingParams:dict, space_type:
     indexDataInIndex(idMapIVFPQIndex, vectorsDataset.ids, vectorsDataset.vectors)
     t2 = timer()
     indexTime = t2 - t1
+
+    # Let's free up the Vector dataset. We should free up the space to ensure that we can free up some RAM
+    vectorsDataset.free_vectors_space()
+
     t1 = timer()
     writeIndexMetrics = writeCagraIndexOnFile(idMapIVFPQIndex, cagraIVFPQIndex, file_to_write)
     t2 = timer()
@@ -60,7 +65,7 @@ def create_index(vectorsDataset:VectorsDataset, indexingParams:dict, space_type:
     del cagraIVFPQIndex
     del idMapIVFPQIndex
     return {
-        "indexTime": indexTime, "writeIndexTime": writeIndexTime, "totalTime": indexTime + writeIndexTime, "unit": "seconds", 
+        "indexTime": indexTime, "writeIndexTime": writeIndexTime, "totalTime": indexTime + writeIndexTime, "unit": "seconds",
         "gpu_to_cpu_index_conversion_time": writeIndexMetrics["gpu_to_cpu_index_conversion_time"] ,
         "write_to_file_time": writeIndexMetrics["write_to_file_time"]
     }

@@ -9,7 +9,8 @@ from index_builder.vector_index_builder import build_index_and_upload_index
 from models.data_model import CreateIndexRequest, CreateIndexResponse
 
 logger = logging.getLogger(__name__)
-executor = ThreadPoolExecutor(max_workers=5)
+# Keeping number of threads 1 here to ensure that we are not creating more than 1 indexing job
+executor = ThreadPoolExecutor(max_workers=1)
 
 @dataclass
 class JobDetails:

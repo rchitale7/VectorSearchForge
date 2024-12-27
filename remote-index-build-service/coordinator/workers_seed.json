@@ -1,0 +1,10 @@
+[
+  {
+    "host": "worker1",
+    "port": 6005
+  },
+  {
+    "host": "worker2",
+    "port": 6005
+  }
+]

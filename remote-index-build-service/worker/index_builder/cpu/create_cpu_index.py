@@ -30,6 +30,10 @@ def create_index(vectorsDataset:VectorsDataset, param, space_type, file_to_write
     t1 = timer()
     indexDataInIndex(cpuIdMapIndex, vectorsDataset.ids, vectorsDataset.vectors)
     t2 = timer()
+
+    # Let's free up the Vector dataset. We should free up the space to ensure that we can free up some RAM
+    vectorsDataset.free_vectors_space()
+
     indexTime = t2 - t1
     @timer_func
     def writeIndex(index, fileName):
