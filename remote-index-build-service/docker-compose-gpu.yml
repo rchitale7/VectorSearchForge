@@ -1,0 +1,125 @@
+networks:
+  remote-index-build-service-network:
+    driver: bridge
+
+volumes:
+  coordinator-logs:
+    driver: local
+  worker-logs1:
+    driver: local
+  worker-logs2:
+    driver: local
+
+services:
+  worker1:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile-gpu
+    image: remote-index-build-service-worker
+    container_name: remote-index-build-service-worker1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - remote-index-build-service-network
+    ports:
+      - "6005"
+    environment:
+    # Set environment variables
+    # remove these variables for production
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - INDEX_BUILD_TYPE=gpu # valid values cpu, gpu
+      - PYTHONFAULTHANDLER=1
+      - PYTHONUNBUFFERED=1
+    ulimits:
+      core:
+        soft: -1
+        hard: -1
+    security_opt:
+      - seccomp=unconfined
+    cap_add:
+      - SYS_PTRACE
+    volumes:
+      # Mounting the local folder
+      - ./worker/logs:/app/logs
+      # Mounting the volume
+      - worker-logs1:/app/logs
+    user: appuser
+    command: python app.py
+
+  worker2:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile-gpu
+    image: remote-index-build-service-worker
+    container_name: remote-index-build-service-worker2
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks:
+      - remote-index-build-service-network
+    ports:
+      - "6005"
+    environment:
+      # Set environment variables
+      # remove these variables for production
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+      - INDEX_BUILD_TYPE=gpu # valid values cpu, gpu
+      - PYTHONFAULTHANDLER=1
+      - PYTHONUNBUFFERED=1
+    ulimits:
+      core:
+        soft: -1
+        hard: -1
+    security_opt:
+      - seccomp=unconfined
+    cap_add:
+      - SYS_PTRACE
+    volumes:
+      # Mounting the local folder
+      - ./worker/logs:/app/logs
+      # Mounting the volume
+      - worker-logs2:/app/logs
+    user: appuser
+    command: python app.py
+
+  coordinator:
+    build:
+      context: ./coordinator
+      dockerfile: Dockerfile
+    image: remote-index-build-service-coordinator
+    container_name: remote-index-build-service-coordinator
+    networks:
+      - remote-index-build-service-network
+    ports:
+      - "6006:6006"
+    expose:
+      - "6006"
+    environment:
+      # Set environment variables
+      # remove these variables for production
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    volumes:
+      # Mounting the local folder
+      - ./coordinator/logs:/app/logs
+      # Mounting the volume
+      - coordinator-logs:/app/logs
+    user: appuser
+    command: python app.py

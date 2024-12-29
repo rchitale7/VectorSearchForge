@@ -1,0 +1,24 @@
+FROM custom-faiss:latest
+WORKDIR /app
+
+COPY requirements-gpu.txt .
+RUN pip install -r requirements-gpu.txt
+
+COPY . .
+
+# Keeping user as root because it can happen that earlier image might using any other user
+USER root
+# Create user and set permissions
+RUN if id "appuser" &>/dev/null; then \
+    echo "User appuser already exists"; \
+else \
+    groupadd -r appuser && useradd -m appuser appuser; \
+fi
+
+RUN chown -R appuser:appuser /app
+RUN echo $USER
+RUN ls -ld /app
+RUN chown -R appuser:appuser /app
+
+RUN mkdir -p /app/logs && \
+    chmod -R 777 /app/logs

@@ -1,3 +1,6 @@
+import sys
+# TODO: Find a better way to import faiss package rather than this.
+sys.path.append('/tmp/faiss/build/faiss/python')
 import faiss
 from timeit import default_timer as timer
 import math
@@ -56,6 +59,7 @@ def create_index(vectorsDataset:VectorsDataset, indexingParams:dict, space_type:
 
     t1 = timer()
     writeIndexMetrics = writeCagraIndexOnFile(idMapIVFPQIndex, cagraIVFPQIndex, file_to_write)
+    logger.info("Write completed")
     t2 = timer()
     writeIndexTime = t2 - t1
     # This will ensure that when destructors of the index is called the internal indexes are deleted too.

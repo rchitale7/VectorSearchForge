@@ -1,4 +1,3 @@
-from index_builder.cpu.create_cpu_index import create_index
 from models.data_model import CreateIndexRequest, IndexTypes
 from utils.decorators.timer import timer_func
 from vector_data_accessor.accessor import VectorsDataset
@@ -53,8 +52,5 @@ def create_index(dataset: VectorsDataset, createIndexRequest:CreateIndexRequest)
         indexing_params = {}
         from index_builder.gpu.create_gpu_index import create_index
         create_index_stats = create_index(dataset, indexing_params, space_type, index_file_path)
-        # from index_builder.gpu.create_gpu_index import create_index
-        # hnsw_params = {}
-        # create_index_stats = create_index(dataset, hnsw_params, "l2", index_file)
     logger.info(f"Stats for the create Index request: {createIndexRequest} is : {create_index_stats}")
     return index_file_path, index_file, create_index_stats

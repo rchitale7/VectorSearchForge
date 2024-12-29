@@ -5,7 +5,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-COPY .. .
+COPY . .
 
 # Create user and set permissions
 RUN useradd -m appuser 
