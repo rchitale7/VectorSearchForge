@@ -13,6 +13,30 @@ class Worker:
     host:str
     port: int
 
+@dataclass
+class RegisterWorkerRequest:
+    workerURL: str
+    workerPort: int
+    workerProtocol: str = 'http'
+
+    @staticmethod
+    def build_register_worker_request(data: dict) -> list['RegisterWorkerRequest']:
+        workerList = data.get('workerList', [])
+        if not workerList:
+            raise ValueError(f"Missing required fields in the input: {data}")
+        if not workerList:
+            raise ValueError(f"At-least 1 worker should be present: {data}")
+        register_worker_request_list = []
+        for worker in workerList:
+            if not all(key in worker for key in ['workerURL', 'workerPort']):
+                raise ValueError(f"Missing required fields in the input: {data}")
+            register_worker_request_list.append(RegisterWorkerRequest(
+                workerURL=worker['workerURL'],
+                workerPort=worker['workerPort'],
+                workerProtocol=worker.get('workerProtocol', 'http')
+            ))
+        return register_worker_request_list
+
 class WorkerClient:
 
     def __init__(self, worker):
@@ -38,6 +62,7 @@ class WorkerClient:
 class WorkerService:
 
     def __init__(self, workers: list):
+        self.round_robin_iterator = None
         self.logger = logging.getLogger(__name__)
         self.workers = workers
         self._build_worker_client()
@@ -46,7 +71,10 @@ class WorkerService:
         self.worker_clients = []
         for worker in self.workers:
             self.worker_clients.append(WorkerClient(worker))
-        self.round_robin_iterator = ThreadSafeRoundRobinIterator(self.worker_clients)
+        if len(self.worker_clients) == 0:
+            self.round_robin_iterator = None
+        else:
+            self.round_robin_iterator = ThreadSafeRoundRobinIterator(self.worker_clients)
 
 
     def get_job(self, job_id: str):
@@ -82,3 +110,23 @@ class WorkerService:
                 jobs[job] = client_jobs[job]
         self.logger.info(f"jobs are : {jobs}")
         return jobs
+
+    def register_worker(self, register_worker_request_list: list[RegisterWorkerRequest]):
+        self.logger.info(f"register_worker_request is : {register_worker_request_list}")
+        for register_worker_request in register_worker_request_list:
+            worker = Worker(register_worker_request.workerURL, register_worker_request.workerPort)
+            self.worker_clients.append(WorkerClient(worker))
+            if self.round_robin_iterator is None:
+                self.round_robin_iterator = ThreadSafeRoundRobinIterator(self.worker_clients)
+            else:
+                self.round_robin_iterator.add_item(WorkerClient(worker))
+
+    def get_all_worker(self):
+        worker_list = []
+        for worker in self.worker_clients:
+            w = {
+                "workerURL": worker.worker.host,
+                "workerPort": worker.worker.port
+            }
+            worker_list.append(w)
+        return worker_list

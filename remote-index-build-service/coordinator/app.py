@@ -4,7 +4,9 @@ import json
 import logging
 from logging.handlers import RotatingFileHandler
 from waitress import serve
-from client.worker_client import WorkerService, Worker
+from client.worker_client import WorkerService, Worker, RegisterWorkerRequest
+import traceback
+import os
 
 # Create logger
 logger = logging.getLogger()
@@ -44,7 +46,14 @@ def get_worker_from_seed_file(seed_file):
         logging.info(f"Workers are: {workers}")
         return workers
 
-workers = get_worker_from_seed_file("workers_seed.json")
+domain = os.getenv('DOMAIN', 'dev')
+if domain == 'dev':
+    logger.info("Running in dev mode")
+    workers = get_worker_from_seed_file("workers_seed.json")
+else:
+    logger.info("Running in prod mode, workers will be added by user")
+    workers = []
+
 workerservice = WorkerService(workers=workers)
 
 @app.route('/')
@@ -76,9 +85,28 @@ def get_jobs():
 def job(job_id: str):
     try:
         jobs = workerservice.get_job(job_id)
-        return json.dumps(jobs, default=lambda o: o.__dict__, indent=4)
+        return json.dumps(jobs, default=lambda o: o.__dict__, indent=4), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/register_worker', methods=['POST'])
+def register_worker():
+    try:
+        logger.info(f"Received request: %s ", request.json)
+        register_worker_request = RegisterWorkerRequest.build_register_worker_request(request.json)
+        workerservice.register_worker(register_worker_request)
+    except Exception as e:
+        logger.error(traceback.format_exc())
+        return jsonify({"error": f"Invalid request {request.json}"}), 400
+    return jsonify({"message": "Worker registered successfully"}), 201
+
+@app.route('/workers', methods=['GET'])
+def get_all_worker():
+    workers_list = {
+        "workerList": workerservice.get_all_worker()
+    }
+    return json.dumps(workers_list, default=lambda o: o.__dict__, indent=4), 200
+
 
 if __name__ == '__main__':
     serve(app, host="0.0.0.0", port=6006)
