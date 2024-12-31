@@ -7,6 +7,7 @@ from waitress import serve
 from client.worker_client import WorkerService, Worker, RegisterWorkerRequest
 import traceback
 import os
+import math
 
 # Create logger
 logger = logging.getLogger()
@@ -109,5 +110,5 @@ def get_all_worker():
 
 
 if __name__ == '__main__':
-    serve(app, host="0.0.0.0", port=6006)
+    serve(app, host="0.0.0.0", port=6006, threads=max(math.floor(os.cpu_count() * 4), 4))
 
