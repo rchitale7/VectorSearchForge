@@ -1,4 +1,5 @@
 import sys
+import os.path
 sys.path.append('/tmp/faiss/build/faiss/python')
 import faiss
 import logging
@@ -53,35 +54,76 @@ def indexDataInIndex(index: faiss.Index, ids, xb):
     else:
         index.add_with_ids(xb, ids)
 
+def runIndicesSearch(xq, graphFile:str, param:dict, gt) -> dict:
+    index:faiss.IndexIDMap = loadGraphFromFile(graphFile)
+    index.index.base_level_only = True
+    hnswParameters = faiss.SearchParametersHNSW()
+    hnswParameters.efSearch = 100 if param.get('ef_search') is None else param['ef_search']
+    logging.info(f"Ef search is : {hnswParameters.efSearch}")
+    k = 100 if param.get('K') is None else param['K']
+    
+    def search(xq, k, params):
+        D, ids = index.search(xq, k, params=params)
+        return ids
+    # K is always set to 100
+    total_time = 0
+    I = []
+    query = xq[0]
+    t1 = timer()
+    result = search(np.array([query]), 100, hnswParameters)
+    t2 = timer()
+    I.append(result[0])
+    total_time = total_time + (t2-t1)
+    print(f"Total time for search: {total_time}")
+
+
+
+def loadGraphFromFile(graphFile: str) -> faiss.Index:
+    if os.path.isfile(graphFile) is False:
+        logging.error(f"The path provided: {graphFile} is not a file")
+        sys.exit(0)
+
+    return faiss.read_index(graphFile)
+
+
+
 if __name__ == "__main__":
-    d = 768
+    d = 128
+    shape = (1, 128)
     np.random.seed(1234)
-    # Create a new memory-mapped array
-    shape = (4_000_000, 768)  # Example shape
-    filename = 'mmap.npy'
+    xq = np.random.random((1, d)).astype('float32')
+    print("Searching index")
 
-    # mmap_array = np.lib.format.open_memmap(filename, mode='w+', dtype='float32', shape=shape)
-    # mmap_array[:] = np.random.rand(*shape)
-    # del mmap_array
-    print("file is written")
+    runIndicesSearch(xq, "/tmp/_1b_165_target_field.faiss", {}, None)
 
-    #xb = np.lib.format.open_memmap(filename, mode='r')
-    xb = np.load(file = filename)
-    #xb2 = np.load(file=filename)
-    #xb = np.vstack((xb, xb2))
+    # d = 768
+    # np.random.seed(1234)
+    # # Create a new memory-mapped array
+    # shape = (4_000_000, 768)  # Example shape
+    # filename = 'mmap.npy'
 
-    # array1 = np.load(file = filename)
-    # array2 = np.load(file = filename)
-    # xb = np.vstack((array1, array2))
-    print(xb.shape)
+    # # mmap_array = np.lib.format.open_memmap(filename, mode='w+', dtype='float32', shape=shape)
+    # # mmap_array[:] = np.random.rand(*shape)
+    # # del mmap_array
+    # print("file is written")
 
-    # Save changes to disk
-    #xb = np.load('my_array.dat', allow_pickle=True)
-    #xb = np.random.random((4_000_000, d)).astype('float32')
-    ids = [i for i in range(len(xb))]
-    #ids = None
-    indexData(d, xb, ids, {}, "l2", "testgpuIndex.cagra.graph")
-    print("Indexing done")
-    del xb
-    time.sleep(10)
-    print("Deleted xb")
+    # #xb = np.lib.format.open_memmap(filename, mode='r')
+    # xb = np.load(file = filename)
+    # #xb2 = np.load(file=filename)
+    # #xb = np.vstack((xb, xb2))
+
+    # # array1 = np.load(file = filename)
+    # # array2 = np.load(file = filename)
+    # # xb = np.vstack((array1, array2))
+    # print(xb.shape)
+
+    # # Save changes to disk
+    # #xb = np.load('my_array.dat', allow_pickle=True)
+    # #xb = np.random.random((4_000_000, d)).astype('float32')
+    # ids = [i for i in range(len(xb))]
+    # #ids = None
+    # indexData(d, xb, ids, {}, "l2", "testgpuIndex.cagra.graph")
+    # print("Indexing done")
+    # del xb
+    # time.sleep(10)
+    # print("Deleted xb")

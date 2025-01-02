@@ -34,8 +34,16 @@ def create_index(vectorsDataset:VectorsDataset, indexingParams:dict, space_type:
     cagraIndexConfig.build_algo = faiss.graph_build_algo_IVF_PQ
     cagraIndexIVFPQConfig = faiss.IVFPQBuildCagraConfig()
     cagraIndexIVFPQConfig.kmeans_n_iters = 10 if indexingParams.get('kmeans_n_iters') == None else indexingParams['kmeans_n_iters']
+    # instead of 32 bits per dim, you are using only 8 bits per dim
     cagraIndexIVFPQConfig.pq_bits = 8 if indexingParams.get('pq_bits') == None else indexingParams['pq_bits']
-    cagraIndexIVFPQConfig.pq_dim = 32 if indexingParams.get('pq_dim') == None else indexingParams['pq_dim']
+    #cagraIndexIVFPQConfig.pq_dim = 16 if indexingParams.get('pq_dim') == None else indexingParams['pq_dim']
+    compression_factor = 8
+    # instead of using d dimension you use d/compression_factor dimensions.
+    cagraIndexIVFPQConfig.pq_dim = int(vectorsDataset.dimensions / compression_factor)
+
+    # In total instead of 128 * 32 bits(where dimension = 128) in total for 1 vector you are using ((128 / 8) * 8) = 128 bits in total
+    # So this is a 32x compression.
+
     cagraIndexIVFPQConfig.n_lists = int(math.sqrt(dataset_size)) if indexingParams.get('n_lists') == None else indexingParams['n_lists']
     cagraIndexIVFPQConfig.kmeans_trainset_fraction = 10 if indexingParams.get('kmeans_trainset_fraction') == None else indexingParams['kmeans_trainset_fraction']
     cagraIndexIVFPQConfig.conservative_memory_allocation = True
@@ -83,6 +91,9 @@ def indexDataInIndex(index: faiss.Index, ids, xb):
 def writeCagraIndexOnFile(idMapIndex: faiss.Index, cagraIndex: faiss.GpuIndexCagra, outputFileName: str):
     t1 = timer()
     cpuIndex = faiss.IndexHNSWCagra()
+    # This value will come from input keeping it 256 as this is what we have in our benchmarks
+    cpuIndex.hnsw.efSearch = 256
+    logging.info(f"HNSW value of ef search is {cpuIndex.hnsw.efSearch}")
     # This will ensure that we have faster conversion time, but make the graph immutable
     cpuIndex.base_level_only = True
     # This will ensure that when destructors of the index is called the internal indexes are deleted too.
