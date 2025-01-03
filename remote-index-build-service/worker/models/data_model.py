@@ -10,6 +10,7 @@ class CreateIndexRequest:
     objectLocation: str
     numberOfVectors: int
     dimensions: int
+    spaceType: str
 
 @dataclass
 class CreateIndexResponse:
@@ -18,13 +19,14 @@ class CreateIndexResponse:
     stats: dict
 
 def build_create_index_request(data: dict) -> CreateIndexRequest:
-    if not all(key in data for key in ['bucket_name', 'object_location', 'number_of_vectors', 'dimensions']):
+    if not all(key in data for key in ['bucket_name', 'object_location', 'number_of_vectors', 'dimensions', 'space_type']):
         raise ValueError("Missing required fields in JSON data")
     return CreateIndexRequest(
         bucketName=data['bucket_name'],
         objectLocation=data['object_location'],
         numberOfVectors=int(data['number_of_vectors']),
-        dimensions=int(data['dimensions'])
+        dimensions=int(data['dimensions']),
+        spaceType=data['space_type']
     )
 
 class ExtendedEnum(Enum):

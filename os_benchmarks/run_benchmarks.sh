@@ -39,7 +39,8 @@ run_search() {
 enable_graph_builds() {
   echo "Flushing the index..."
   curl --request GET --url $1/target_index/_flush
-
+  echo "Sleeping for 5 mins to ensure that graph builds triggered due to flush are completed..."
+  sleep 300
   echo "Enabling Graph Builds..."
   curl --request PUT \
   --url $1/target_index/_settings \

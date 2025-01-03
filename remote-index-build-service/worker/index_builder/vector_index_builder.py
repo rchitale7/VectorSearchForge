@@ -38,7 +38,7 @@ def build_index_and_upload_index(createIndexRequest: CreateIndexRequest):
 def create_index(dataset: VectorsDataset, createIndexRequest:CreateIndexRequest):
     index_file = f"{createIndexRequest.objectLocation}.faiss"
     index_file_path = "/tmp/"
-    space_type = "l2"
+    space_type = createIndexRequest.spaceType
     create_index_stats = {}
     if index_type == IndexTypes.CPU:
         from index_builder.cpu.create_cpu_index import create_index

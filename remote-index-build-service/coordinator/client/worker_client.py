@@ -96,7 +96,7 @@ class WorkerService:
 
     def create_index(self, createIndexRequest):
         worker_client = self.round_robin_iterator.get_next()
-        self.logger.info("in create_index call")
+        self.logger.debug("in create_index call")
         response = worker_client.create_index(createIndexRequest)
         self.logger.info(f"response is : {response}")
         return response
