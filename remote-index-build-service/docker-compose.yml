@@ -18,6 +18,10 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
       - INDEX_BUILD_TYPE=${INDEX_BUILD_TYPE} # valid values cpu, gpu
+      - COORDINATOR_NODE_URL=coordinator
+      - COORDINATOR_NODE_PORT=6006
+      - HOST_IP=${HOST_IP}
+      - REGISTER_WITH_COORDINATOR=False
     volumes:
       # Mounting the local folder
       - ./worker/logs:/app/logs
@@ -45,6 +49,10 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
       - INDEX_BUILD_TYPE=${INDEX_BUILD_TYPE} # valid values cpu, gpu
+      - COORDINATOR_NODE_URL=coordinator
+      - COORDINATOR_NODE_PORT=6006
+      - HOST_IP=${HOST_IP}
+      - REGISTER_WITH_COORDINATOR=False
     volumes:
       # Mounting the local folder
       - ./worker/logs:/app/logs

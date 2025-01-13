@@ -1,5 +1,5 @@
 import traceback
-
+import os
 from flask import Flask, jsonify, request
 from datetime import datetime
 import json
@@ -10,7 +10,9 @@ import uuid
 import logging
 from logging.handlers import RotatingFileHandler
 from waitress import serve
+from urllib3 import HTTPConnectionPool
 
+PORT=6005
 # Create logger
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -42,6 +44,11 @@ app = Flask(__name__)
 
 indexing_service = IndexingService()
 
+
+coordinator_node_url = os.getenv('COORDINATOR_NODE_URL', '')
+coordinator_node_protocol = os.getenv('COORDINATOR_NODE_PROTOCOL', 'http')
+coordinator_node_port = int(os.getenv('COORDINATOR_NODE_PORT', "6006"))
+register_with_coordinator = int(os.getenv('REGISTER_WITH_COORDINATOR', 1))
 
 @app.route('/')
 def hello():
@@ -85,5 +92,35 @@ def create_index():
     return jsonify({"job_id": job_details.id, "status": job_details.status}), 201
 
 
+def register_worker():
+    logger.info("Registering the worker with coordinator node")
+
+    if len(coordinator_node_url) == 0:
+        logger.error(f"coordinator_node_url value is empty : {coordinator_node_url}")
+        raise Exception(f"coordinator_node_url value is empty : {coordinator_node_url}")
+
+    client_pool = HTTPConnectionPool(host=coordinator_node_url, port=coordinator_node_port, maxsize=1)
+    
+    host_ip = os.getenv('HOST_IP', "")
+    if len(host_ip) == 0 :
+        logger.error("Host IP is empty. throwing an error")
+        raise Exception("Host IP is empty. throwing an error")
+
+    register_worker = {
+        "workerList": [
+            {
+                "workerURL": host_ip,
+                "workerPort": PORT
+            }
+        ]
+    }
+
+    response = client_pool.request("POST", "/register_worker", body=json.dumps(register_worker), headers={'Content-Type': 'application/json'})
+    response = response.json()
+    logger.info("Response for registering worker is : {}", response)
+
+
 if __name__ == '__main__':
-    serve(app, host="0.0.0.0", port=6005)
+    if register_with_coordinator == 1:
+        register_worker()
+    serve(app, host="0.0.0.0", port=PORT)
