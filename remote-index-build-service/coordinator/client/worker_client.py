@@ -7,6 +7,7 @@ import json
 
 from util.common import ThreadSafeRoundRobinIterator
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class Worker:
@@ -41,7 +42,7 @@ class WorkerClient:
 
     def __init__(self, worker):
         self.logger = logging.getLogger(__name__)
-        self.client_pool = HTTPConnectionPool(host=worker.host, port=worker.port, maxsize=10)
+        self.client_pool = HTTPConnectionPool(host=worker.host, port=worker.port, maxsize=10, timeout=1)
         self.worker = worker
 
     def get_job(self, job_id: str):
@@ -50,13 +51,29 @@ class WorkerClient:
     def create_index(self, createIndexRequest):
         self.logger.info(f"createIndexRequest is : {createIndexRequest}")
         response = self.client_pool.request("POST", "/create_index", body=json.dumps(createIndexRequest), headers={'Content-Type': 'application/json'})
-        return response.json()
+        if response == 200:
+            return response.json()
+        return None
 
     def get_jobs(self):
         jobs = self.client_pool.request("GET", "/jobs", headers={'Content-Type': 'application/json'})
         jobs = jobs.json()
         self.logger.info(f"Jobs are : {jobs}")
         return jobs
+
+    def heart_beat(self):
+        try:
+            response = self.client_pool.request(method="GET", url="/heart_beat", headers={'Content-Type': 'application/json'})
+            return response.status == 200
+        except Exception as e:
+            self.logger.error(f"Error in heart_beat for {self.worker.host}:{self.worker.port} : {e}")
+        return False
+
+    def __str__(self):
+        return f"WorkerClient(host={self.worker.host}, port={self.worker.port})"
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class WorkerService:
@@ -68,7 +85,7 @@ class WorkerService:
         self._build_worker_client()
 
     def _build_worker_client(self):
-        self.worker_clients = []
+        self.worker_clients: list[WorkerClient] = []
         for worker in self.workers:
             self.worker_clients.append(WorkerClient(worker))
         if len(self.worker_clients) == 0:

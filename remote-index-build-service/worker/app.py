@@ -1,5 +1,6 @@
 import traceback
 import os
+
 from flask import Flask, jsonify, request
 from datetime import datetime
 import json
@@ -59,12 +60,19 @@ coordinator_node_protocol = os.getenv('COORDINATOR_NODE_PROTOCOL', 'http')
 coordinator_node_port = int(os.getenv('COORDINATOR_NODE_PORT', "6006"))
 register_with_coordinator = int(os.getenv('REGISTER_WITH_COORDINATOR', 1))
 
-@app.route('/')
+@app.route('/', methods=['GET'])
 def hello():
     return jsonify({
         "message": "Hello from Vector Index Build Service Worker!",
         "timestamp": datetime.now().isoformat()
-    })
+    }), 200
+
+@app.route('/heart_beat')
+def heart_beat():
+    return jsonify({
+        "message": "Hello from Vector Index Build Service Coordinator!",
+        "timestamp": datetime.now().isoformat()
+    }), 200
 
 
 @app.route('/job/<string:job_id>')

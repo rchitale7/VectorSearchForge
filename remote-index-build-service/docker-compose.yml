@@ -21,7 +21,7 @@ services:
       - COORDINATOR_NODE_URL=coordinator
       - COORDINATOR_NODE_PORT=6006
       - HOST_IP=${HOST_IP}
-      - REGISTER_WITH_COORDINATOR=False
+      - REGISTER_WITH_COORDINATOR=0
     volumes:
       # Mounting the local folder
       - ./worker/logs:/app/logs
@@ -52,7 +52,7 @@ services:
       - COORDINATOR_NODE_URL=coordinator
       - COORDINATOR_NODE_PORT=6006
       - HOST_IP=${HOST_IP}
-      - REGISTER_WITH_COORDINATOR=False
+      - REGISTER_WITH_COORDINATOR=0
     volumes:
       # Mounting the local folder
       - ./worker/logs:/app/logs
