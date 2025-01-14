@@ -3,6 +3,7 @@ import os
 from flask import Flask, jsonify, request
 from datetime import datetime
 import json
+import subprocess
 
 from index_builder.indexing_service import IndexingService
 from models import data_model
@@ -11,6 +12,14 @@ import logging
 from logging.handlers import RotatingFileHandler
 from waitress import serve
 from urllib3 import HTTPConnectionPool
+
+# To ensure that we are getting the host IP, use the host mode on ECS service.
+def getIp():
+    process = subprocess.Popen(["hostname", "-I"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    host_ip = str(stdout.decode()).split(" ")[0]
+    print(f"Host IP is: {host_ip}")
+    return host_ip
 
 PORT=6005
 # Create logger
@@ -101,7 +110,7 @@ def register_worker():
 
     client_pool = HTTPConnectionPool(host=coordinator_node_url, port=coordinator_node_port, maxsize=1)
     
-    host_ip = os.getenv('HOST_IP', "")
+    host_ip = getIp()
     if len(host_ip) == 0 :
         logger.error("Host IP is empty. throwing an error")
         raise Exception("Host IP is empty. throwing an error")
