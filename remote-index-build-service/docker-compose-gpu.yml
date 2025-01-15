@@ -124,6 +124,7 @@ services:
       # remove these variables for production
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
+      - DOMAIN=${DOMAIN}
     volumes:
       # Mounting the local folder
       - ./coordinator/logs:/app/logs
