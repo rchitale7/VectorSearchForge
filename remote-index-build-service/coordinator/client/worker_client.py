@@ -51,7 +51,7 @@ class WorkerClient:
     def create_index(self, createIndexRequest):
         self.logger.info(f"createIndexRequest is : {createIndexRequest}")
         response = self.client_pool.request("POST", "/create_index", body=json.dumps(createIndexRequest), headers={'Content-Type': 'application/json'})
-        if response == 200:
+        if response.status == 200 or response.status == 201:
             return response.json()
         return None
 
