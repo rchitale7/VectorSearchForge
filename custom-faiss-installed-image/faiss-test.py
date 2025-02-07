@@ -1,5 +1,6 @@
 import sys
 import os.path
+# If you faiss python installed you should skip this line
 sys.path.append('/tmp/faiss/build/faiss/python')
 import faiss
 import logging
@@ -24,6 +25,7 @@ def indexData(d:int, xb:np.ndarray, ids:np.ndarray, indexingParams:dict, space_t
     cagraIndexConfig.graph_degree = 32 if indexingParams.get('graph_degree') == None else indexingParams['graph_degree']
     cagraIndexConfig.device = faiss.get_num_gpus() - 1
     #cagraIndexConfig.conservative_memory_allocation = True
+    # This was available earlier now this parameter is now available
     #cagraIndexConfig.store_dataset = False
 
     cagraIndexConfig.build_algo = faiss.graph_build_algo_IVF_PQ
@@ -88,42 +90,16 @@ def loadGraphFromFile(graphFile: str) -> faiss.Index:
 
 
 if __name__ == "__main__":
-    d = 128
-    shape = (1, 128)
-    np.random.seed(1234)
-    xq = np.random.random((1, d)).astype('float32')
-    print("Searching index")
+    d = 768
+    filename = 'mmap-7m.npy'
+    print("file is written, loading file now..")
+    xb = np.load(file = filename)
+    print(xb.shape)
 
-    runIndicesSearch(xq, "/tmp/_1b_165_target_field.faiss", {}, None)
-
-    # d = 768
-    # np.random.seed(1234)
-    # # Create a new memory-mapped array
-    # shape = (4_000_000, 768)  # Example shape
-    # filename = 'mmap.npy'
-
-    # # mmap_array = np.lib.format.open_memmap(filename, mode='w+', dtype='float32', shape=shape)
-    # # mmap_array[:] = np.random.rand(*shape)
-    # # del mmap_array
-    # print("file is written")
-
-    # #xb = np.lib.format.open_memmap(filename, mode='r')
-    # xb = np.load(file = filename)
-    # #xb2 = np.load(file=filename)
-    # #xb = np.vstack((xb, xb2))
-
-    # # array1 = np.load(file = filename)
-    # # array2 = np.load(file = filename)
-    # # xb = np.vstack((array1, array2))
-    # print(xb.shape)
-
-    # # Save changes to disk
-    # #xb = np.load('my_array.dat', allow_pickle=True)
-    # #xb = np.random.random((4_000_000, d)).astype('float32')
-    # ids = [i for i in range(len(xb))]
-    # #ids = None
-    # indexData(d, xb, ids, {}, "l2", "testgpuIndex.cagra.graph")
-    # print("Indexing done")
-    # del xb
-    # time.sleep(10)
-    # print("Deleted xb")
+    #ids = [i for i in range(len(xb))]
+    ids = None
+    indexData(d, xb, ids, {}, "l2", "testgpuIndex.cagra.graph")
+    print("Indexing done")
+    del xb
+    time.sleep(10)
+    print("Deleted xb")

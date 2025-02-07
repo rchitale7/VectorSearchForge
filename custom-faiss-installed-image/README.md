@@ -4,7 +4,7 @@ Below are the steps to create the image that can have a custom faiss python code
 2. Ensure that faiss is checked out before you trigger the build. The commit of faiss I have tested with is: 3c8dc4194907e9b911551d5a009468106f8b9c7f
 3. Build the docker image using this command
 ```
-docker build -t custom-faiss . --no-cache
+rm -rf faiss ; git restore faiss ; ./build-docker-image.sh
 ```
 4. Once image is build use the below command to run the container.
 ```
