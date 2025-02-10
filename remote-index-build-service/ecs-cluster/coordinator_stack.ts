@@ -49,7 +49,7 @@ export class CoordinatorStack extends cdk.Stack {
         // Attach the fleet to an ECS cluster with a capacity provider.
         // This capacity provider will automatically scale up the ASG
         // to launch more GPU instances when GPU tasks need them.
-        const cluster = new ecs.Cluster(this, id + "EcsCluster", {vpc});
+        const cluster = new ecs.Cluster(this, id + "EcsCluster", { vpc: vpc, containerInsights: true});
         const capacityProvider = new ecs.AsgCapacityProvider(
             this,
             id + "AsgCapacityProvider",
