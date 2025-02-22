@@ -9,6 +9,7 @@ import {SecurityGroup} from "aws-cdk-lib/aws-ec2";
 import {ApplicationLoadBalancer} from "aws-cdk-lib/aws-elasticloadbalancingv2";
 import {Construct} from "constructs";
 import {CommonStackProps} from "./index";
+import {EbsDeviceVolumeType} from "aws-cdk-lib/aws-autoscaling";
 
 export const SERVICE_PREFIX:string = "vector-index-build-service"
 export const WORKER_IMAGE_NAME: string = "worker-image";
@@ -51,7 +52,17 @@ export class GpuWorkerStack extends cdk.Stack {
             desiredCapacity: 3,
             vpc,
             maxCapacity: 10,
-            securityGroup: SecurityGroup.fromLookupById(this, id + "-sg", props.securityGroup)
+            securityGroup: SecurityGroup.fromLookupById(this, id + "-sg", props.securityGroup),
+            blockDevices: [
+                {
+                    deviceName: '/dev/xvda', // Root volume
+                    volume: autoscaling.BlockDeviceVolume.ebs(1000, {
+                        volumeType: EbsDeviceVolumeType.GP3,
+                        deleteOnTermination: true
+                    }),
+                }
+            ]
+
         });
 
         // Attach the fleet to an ECS cluster with a capacity provider.
