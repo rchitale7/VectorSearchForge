@@ -52,6 +52,7 @@ enable_graph_builds() {
 }
 
 setup_cluster() {
+
   echo "Setting up cluster..."
   curl --request PUT \
     --url $1/_cluster/settings \
@@ -59,16 +60,30 @@ setup_cluster() {
     --header 'User-Agent: insomnia/10.2.0' \
     --data '{
       "persistent": {
-          "knn.remote.index.build.enabled": "true",
-          "knn.remote.index.build.max_docs": 100000,
-          "knn.s3.access.key": "'$2'",
-          "knn.s3.secret.key": "'$3'",
-          "knn.s3.token.key": null,
-          "knn.s3.bucket": "remote-index-poc-bucket",
-          "knn.remote.index.build.service.endpoint": "'$4'",
-          "knn.remote.index.build.service.port": "'$5'"
+        "knn.remote_index_build.vector_repo" : "vector-repo",
+        "knn.remote_index_build.threshold" : 15000,
+        "knn.feature.remote_index_build.enabled" : "true",
+        "knn.remote.index.build.service.endpoint": "'$4'",
+        "knn.remote.index.build.service.port": "'$5'"
       }
   }'
+}
+
+setup_repo() {
+  echo "Setting up repo..."
+    curl --request PUT \
+      --url $1/_snapshot/vector-repo \
+      --header 'Content-Type: application/json' \
+      --header 'User-Agent: insomnia/10.2.0' \
+      --data '{
+          "type": "s3",
+          "settings": {
+          "bucket": "remote-index-navneet-knn",
+          "base_path": "vectors",
+          "region": "us-west-2",
+          "s3_upload_retry_enabled": false
+        }
+    }'
 }
 
 # Function to display usage
@@ -154,9 +169,11 @@ run_benchmark() {
 
     setup_cluster $ENDPOINT $ACCESS_KEY $SECRET_KEY $COORDINATOR_ENDPOINT $COORDINATOR_PORT
 
+    setup_repo $ENDPOINT
+
     run_indexing  $ENDPOINT $PARAMS_FILE
 
-    enable_graph_builds $ENDPOINT
+    #enable_graph_builds $ENDPOINT
 
     run_force_merge  $ENDPOINT $PARAMS_FILE
 
