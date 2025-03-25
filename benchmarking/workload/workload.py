@@ -2,6 +2,7 @@ import yaml
 import logging
 import sys
 import os
+from typing import List
 
 from benchmarking.data_types.data_types import IndexTypes, WorkloadTypes
 from benchmarking.dataset import dataset_utils
@@ -18,7 +19,7 @@ logging.basicConfig(
 
 
 
-def runWorkload(workloadName: str, indexTypeStr: str, workloadType: WorkloadTypes):
+def runWorkload(workloadNames: List[str], indexTypeStr: str, workloadType: WorkloadTypes):
     allWorkloads = readAllWorkloads()
     indexTypesList = []
     if indexTypeStr == "all":
@@ -27,11 +28,13 @@ def runWorkload(workloadName: str, indexTypeStr: str, workloadType: WorkloadType
         indexTypesList.append(IndexTypes.from_str(indexTypeStr))
 
     for indexType in indexTypesList:
-        if workloadName == "all":
+        # if workloadNames are empty, default to running all workloads
+        if len(workloadNames) == 0:
             for currentWorkloadName in allWorkloads[indexType.value]:
                 executeWorkload(workloadName=currentWorkloadName, workloadToExecute=allWorkloads[indexType.value][currentWorkloadName], indexType=indexType, workloadType=workloadType)
         else:
-            executeWorkload(workloadName=workloadName, workloadToExecute=allWorkloads[indexType.value][workloadName], indexType=indexType, workloadType=workloadType)
+            for workloadName in workloadNames:
+                executeWorkload(workloadName=workloadName, workloadToExecute=allWorkloads[indexType.value][workloadName], indexType=indexType, workloadType=workloadType)
 
 def executeWorkload(workloadName: str, workloadToExecute:dict, indexType: IndexTypes, workloadType: WorkloadTypes):
     workloadToExecute["indexType"] = indexType.value
