@@ -1,35 +1,25 @@
 import getopt
 import sys
+import os
 from benchmarking.workload.workload import runWorkload
 from benchmarking.data_types.data_types import IndexTypes, WorkloadTypes
 import config
 
-def main(argv):
-    opts, args = getopt.getopt(argv, "", ["workload=", "index_type=", "workload_type=", "run_id=", "help"])
-    workloadName = "all"
-    indexType = "all"
-    workloadType = WorkloadTypes.INDEX_AND_SEARCH
+def main():
 
-    for opt, arg in opts:
-        if opt == '--help':
-            print('--workload <dataset file name>')
-            indexTypeValues = IndexTypes.list()
-            indexTypeValues.append("all")
-            print(f'--index_type(optional) should have a value {indexTypeValues}, default is {indexType}')
-            print(f'--workload_type(optional) should have a value {WorkloadTypes.list()} default is : {WorkloadTypes.INDEX_AND_SEARCH.value}')
-            print(f'--run_id(optional) can have any value, default is : {config.run_id}')
-            sys.exit()
-        elif opt in "--workload":
-            workloadName = arg
-        elif opt == '--index_type':
-            indexType = arg
-        elif opt == "--workload_type":
-            workloadType = WorkloadTypes.from_str(arg)
-        elif opt == "--run_id":
-            config.run_id = arg
+    workload_names = os.environ.get("workload", [])
+    index_type = os.environ.get("index_type", "all")
+    workload_type = os.environ.get("workload_type", WorkloadTypes.INDEX_AND_SEARCH)
+    run_id = os.environ.get("run_id", None)
 
-    runWorkload(workloadName, indexType, workloadType)
+    if len(workload_names) != 0:
+        workload_names = workload_names.split(",")
+
+    if run_id is not None:
+        config.run_id = run_id
+
+    runWorkload(workload_names, index_type, workload_type)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main()
