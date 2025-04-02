@@ -18,7 +18,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('vector_search.log'),
+        logging.FileHandler('/tmp/files/vector_search.log'),
         logging.StreamHandler()
     ]
 )
@@ -322,7 +322,6 @@ def indexAndSearchUsingCuvs(file):
 
 
 def indexAndSearchUsingFaiss(file, indexingParams={}):
-    logging.info("new Code")
     d, xb, ids = prepare_indexing_dataset(file)
     res = faiss.StandardGpuResources()
     metric = faiss.METRIC_L2
