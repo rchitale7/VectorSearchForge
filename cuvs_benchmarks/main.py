@@ -322,6 +322,7 @@ def indexAndSearchUsingCuvs(file):
 
 
 def indexAndSearchUsingFaiss(file, indexingParams={}):
+    logging.info("new Code")
     d, xb, ids = prepare_indexing_dataset(file)
     res = faiss.StandardGpuResources()
     metric = faiss.METRIC_L2
@@ -358,11 +359,21 @@ def indexAndSearchUsingFaiss(file, indexingParams={}):
 
     cagraIVFPQIndex.copyTo(cpuIndex)
     idMapIVFPQIndex.index = cpuIndex
+
+    graph_file = "/tmp/files/open-ai.graph"
+    faiss.write_index(idMapIVFPQIndex, graph_file)
+    del xb
+    del idMapIVFPQIndex
+    import gc
+    gc.collect()
+    cagraHNSWIndex:faiss.IndexIDMap = faiss.read_index(graph_file)
+    cagraHNSWIndex.index.base_level_only = True
+    
     hnswParameters = faiss.SearchParametersHNSW()
     hnswParameters.efSearch = 256
 
     def search(q, k, params):
-        D, ids = idMapIVFPQIndex.search(x=q, k=k, params=params)
+        D, ids = cagraHNSWIndex.search(x=q, k=k, params=params)
         return ids
 
     d, xq, gt = prepare_search_dataset(file)
