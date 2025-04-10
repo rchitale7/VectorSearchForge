@@ -1,4 +1,4 @@
-FROM opensearchstaging/remote-vector-index-builder:base-latest
+FROM opensearchstaging/remote-vector-index-builder:faiss-base-latest
 
 WORKDIR /benchmarking
 

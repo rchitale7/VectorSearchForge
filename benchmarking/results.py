@@ -7,10 +7,9 @@ import sys
 from benchmarking.data_types.data_types import IndexTypes, WorkloadTypes
 from benchmarking.utils.common_utils import ensureDir, formatTimingMetricsValue, readAllWorkloads
 
-logging.basicConfig(level=logging.INFO)
 
 def persistMetricsAsCSV(workloadType: WorkloadTypes, allMetrics: dict, workloadName: str, indexType: IndexTypes):
-    ensureDir(f"results/{workloadName}")
+    file_path = ensureDir(f"results/{workloadName}")
     fields = ["workload-name", "indexType", "dataset-name", "dimensions", "vectors-count", "queries-count", "indexing-params", "index-creation-time", "gpu-to-cpu-index-conversion-time", "write-to-file-time", "write-index-time", "total-build-time", "search-parameter", "search-time", "unit", "search-throughput", "recall@100", "recall@1"]
     rows = []
     if workloadType == WorkloadTypes.INDEX:
@@ -52,18 +51,18 @@ def persistMetricsAsCSV(workloadType: WorkloadTypes, allMetrics: dict, workloadN
             rows.append(row)
             
 
-    with open(f"results/{workloadName}/{workloadType.value}_{indexType.value}.csv", "w") as csvfile:
+    with open(f"{file_path}/{workloadType.value}_{indexType.value}.csv", "w") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fields)
         # writing headers (field names)
         writer.writeheader()
         # writing data rows
         writer.writerows(rows)
     
-    logging.info(f"Results are stored at location: results/{workloadName}/{workloadType.value}_{indexType.value}.csv")
-    return f"results/{workloadName}/{workloadType.value}_{indexType.value}.csv"
+    logging.info(f"Results are stored at location: {file_path}/{workloadType.value}_{indexType.value}.csv")
+    return f"{file_path}/{workloadType.value}_{indexType.value}.csv"
 
 
-def writeDataInCSV(workloadName:str, indexType:str, workloadType:WorkloadTypes):
+def writeDataInCSV(workloadNames:str, indexType:str, workloadType:WorkloadTypes):
     if workloadType == WorkloadTypes.INDEX:
         logging.error("This type of workload is not supported for writing data in csv")
         sys.exit()
@@ -77,7 +76,7 @@ def writeDataInCSV(workloadName:str, indexType:str, workloadType:WorkloadTypes):
 
     workloadCSVFiles = []
     for indexTypeEnum in indexTypesList:
-        if workloadName == "all":
+        if len(workloadNames) == 0:
             allWorkloads = readAllWorkloads()
             
             for currentWorkloadName in allWorkloads[indexTypeEnum.value]:
@@ -85,14 +84,16 @@ def writeDataInCSV(workloadName:str, indexType:str, workloadType:WorkloadTypes):
                 if csvFile is not None:
                     workloadCSVFiles.append(csvFile)
         else:
-            csvFile = writeDataInCSVPerWorkload(workloadName, indexTypeEnum, workloadType)
-            if csvFile is not None:
-                workloadCSVFiles.append(csvFile)
+            for workloadName in workloadNames:
+                csvFile = writeDataInCSVPerWorkload(workloadName, indexTypeEnum, workloadType)
+                if csvFile is not None:
+                    workloadCSVFiles.append(csvFile)
 
     writeDataInSingleCSVFile(workloadCSVFiles, "all_results.csv")
 
 def writeDataInCSVPerWorkload(workloadName:str, indexType:IndexTypes, workloadType:WorkloadTypes)-> str:
-    jsonFile = f"results/{workloadName}/{workloadType.value}_{indexType.value}.json"
+    dir = ensureDir(f"results/{workloadName}")
+    jsonFile = f"{dir}/{workloadType.value}_{indexType.value}.json"
     if os.path.exists(jsonFile) is False:
         logging.warn(f"No result file exist for {workloadName} , indexType: {indexType.value} workloadType {workloadType.value} at {jsonFile}")
         return None
@@ -106,14 +107,14 @@ def writeDataInSingleCSVFile(workloadCSVFiles: list, outfileName:str):
     if len(workloadCSVFiles) == 0:
         logging.warn("No CSV files to combine to a single result file")
         return
-    ensureDir("results/all/")
+    dir = ensureDir("results/all/")
 
-    if os.path.exists(f"results/all/{outfileName}"):
+    if os.path.exists(f"{dir}/{outfileName}"):
         logging.info(f"Deleting the file results/all/{outfileName}, as it exist")
-        os.remove(f"results/all/{outfileName}")
+        os.remove(f"{dir}/{outfileName}")
 
 
-    outputFile = open(f"results/all/{outfileName}",'w')
+    outputFile = open(f"{dir}/{outfileName}",'w')
     # This will add header and other all the data from first file in output file.
     with open(workloadCSVFiles[0]) as f:
         logging.info(f"Writing file: {workloadCSVFiles[0]}")
@@ -128,27 +129,3 @@ def writeDataInSingleCSVFile(workloadCSVFiles: list, outfileName:str):
             for line in f:
                 outputFile.write(line)
     logging.info(f"All data is written in the file results/all/{outfileName}")
-
-
-def main(argv):
-    opts, args = getopt.getopt(argv, "", ["workload=", "index_type=", "workload_type=", "h"])
-    workloadName = "all"
-    indexType = "all"
-    workloadType = WorkloadTypes.INDEX_AND_SEARCH
-    for opt, arg in opts:
-        if opt == '--h':
-            print('--dataset_file <dataset file path>')
-            print(f'--index_type should have a value {IndexTypes.list()}')
-            print(f'--workload_type(optional) should have a value {WorkloadTypes.list()} default is : {WorkloadTypes.INDEX_AND_SEARCH.value}')
-            sys.exit()
-        elif opt in "--workload":
-            workloadName = arg
-        elif opt == '--index_type':
-            indexType = arg
-        elif opt == "--workload_type":
-            workloadType = WorkloadTypes.from_str(arg)
-
-    writeDataInCSV(workloadName, indexType, workloadType)
-
-if __name__ == "__main__":
-    main(sys.argv[1:])
