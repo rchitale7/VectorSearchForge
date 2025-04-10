@@ -11,12 +11,6 @@ from benchmarking.utils.common_utils import ensureDir
 import json
 import time
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-
 
 
 def runWorkload(workloadNames: List[str], indexTypeStr: str, workloadType: WorkloadTypes):
@@ -44,7 +38,7 @@ def executeWorkload(workloadName: str, workloadToExecute:dict, indexType: IndexT
         f"{workloadName}" : {}
     }
     if workloadType == WorkloadTypes.INDEX_AND_SEARCH or workloadType == WorkloadTypes.INDEX:
-        indexingMetrics = doIndexing(workloadToExecute, dataset_file, indexType)
+        indexingMetrics = doIndexing(workloadToExecute, dataset_file, indexType, workloadType)
         allMetrics[workloadName] = {
             "workload-details": indexingMetrics["workload-details"],
             "indexingMetrics": indexingMetrics["indexing-metrics"]
@@ -52,7 +46,7 @@ def executeWorkload(workloadName: str, workloadToExecute:dict, indexType: IndexT
         
 
     if workloadType == WorkloadTypes.INDEX_AND_SEARCH or workloadType == WorkloadTypes.SEARCH:
-        searchMetrics = doSearch(workloadToExecute, dataset_file, indexType)
+        searchMetrics = doSearch(workloadToExecute, dataset_file, indexType, workloadType)
         allMetrics[workloadName]["searchMetrics"] = searchMetrics["search-metrics"]
         allMetrics[workloadName]["workload-details"] = searchMetrics["workload-details"]
     
@@ -65,7 +59,7 @@ def persistMetricsAsJson(workloadType: WorkloadTypes, allMetrics: dict, workload
         json.dump(allMetrics, file, indent=4)
 
 
-def doIndexing(workloadToExecute: dict, datasetFile: str, indexType: IndexTypes):
+def doIndexing(workloadToExecute: dict, datasetFile: str, indexType: IndexTypes, workloadType: WorkloadTypes):
     logging.info("Run Indexing...")
     d, xb, ids = dataset_utils.prepare_indexing_dataset(datasetFile, workloadToExecute.get('normalize'), workloadToExecute.get('indexing-docs'))
     workloadToExecute["dimension"] = d
@@ -103,15 +97,16 @@ def doIndexing(workloadToExecute: dict, datasetFile: str, indexType: IndexTypes)
     
 
 
-def doSearch(workloadToExecute: dict, datasetFile: str, indexType: IndexTypes):
+def doSearch(workloadToExecute: dict, datasetFile: str, indexType: IndexTypes, workloadType: WorkloadTypes):
     logging.info("Running Search...")
     d, xq, gt = dataset_utils.prepare_search_dataset(datasetFile, workloadToExecute.get('normalize'))
     workloadToExecute["dimension"] = d
     workloadToExecute["queriesCount"] = len(xq)
     parameters_level_metrics = []
     for indexingParam in workloadToExecute["indexing-parameters"]:
-        # dir_path = ensureDir("graphs")
-        # put_graph_file_name_in_param(workloadToExecute, d, indexType, indexingParam, dir_path)
+        if workloadType == WorkloadTypes.SEARCH:
+            dir_path = ensureDir("graphs")
+            put_graph_file_name_in_param(workloadToExecute, d, indexType, indexingParam, dir_path)
         for searchParam in workloadToExecute['search-parameters']:
             logging.info(f"=== Running search for index config: {indexingParam} and search config: {searchParam}===")
             searchTimingMetrics = search_indices.runIndicesSearch(xq, indexingParam['graph_file'], searchParam, gt)

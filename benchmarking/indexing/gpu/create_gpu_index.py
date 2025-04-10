@@ -9,6 +9,7 @@ import numpy as np
 def indexData(d:int, xb:np.ndarray, ids:np.ndarray, indexingParams:dict, space_type:str, file_to_write:str="gpuIndex.cagra.graph"):
     num_of_parallel_threads = get_omp_num_threads()
     logging.info(f"Setting number of parallel threads for graph build: {num_of_parallel_threads}")
+    logging.info(f"First two ids : {ids[0]}, {ids[1]}")
     faiss.omp_set_num_threads(num_of_parallel_threads)
     res = faiss.StandardGpuResources()
     metric = faiss.METRIC_L2
@@ -41,10 +42,12 @@ def indexData(d:int, xb:np.ndarray, ids:np.ndarray, indexingParams:dict, space_t
     idMapIVFPQIndex = faiss.IndexIDMap(cagraIVFPQIndex)
 
     t1 = timer()
+    logging.info("Indexing data on GPU")
     indexDataInIndex(idMapIVFPQIndex, ids, xb)
     t2 = timer()
     indexTime = t2 - t1
     t1 = timer()
+    logging.info("Writing cagra index on file")
     writeIndexMetrics = writeCagraIndexOnFile(idMapIVFPQIndex, cagraIVFPQIndex, file_to_write)
     t2 = timer()
     writeIndexTime = t2 - t1
@@ -73,12 +76,14 @@ def writeCagraIndexOnFile(idMapIndex: faiss.Index, cagraIndex: faiss.GpuIndexCag
     cpuIndex.base_level_only = True
     # This will ensure that when destructors of the index is called the internal indexes are deleted too.
     cpuIndex.own_fields = True
+    logging.info("In writeCagraIndexOnFile, before calling copyTo")
     cagraIndex.copyTo(cpuIndex)
     idMapIndex.index = cpuIndex
     t2 = timer()
     conversion_time = t2 - t1
     
     t1 = timer()
+    logging.info("In writeCagraIndexOnFile, before calling write_index")
     faiss.write_index(idMapIndex, outputFileName)
     t2 = timer()
     write_to_file_time = t2 - t1
