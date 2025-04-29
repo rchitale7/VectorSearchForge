@@ -124,9 +124,11 @@ def doIndexing(
         else SpaceType(workloadToExecute.get("space-type"))
     )
 
+
     parameters_level_metrics = []
     for param in tqdm(workloadToExecute["indexing-parameters"]):
         prepare_env_for_indexing(workloadToExecute, indexType, param)
+        graph_file = param["graph_file"]
         timingMetrics = None
         metrics = {"indexing-param": param}
         logging.info(
@@ -161,22 +163,23 @@ def doIndexing(
                     workloadToExecute,
                     param["graph_file"],
                 )
-                metrics["indexing-timingMetrics"] = timingMetrics
                 # timingMetrics = indexDataInGpu(d, xb, ids, param, space_type, param["graph_file"])
+                metrics["indexing-timingMetrics"] = timingMetrics
                 time.sleep(3)
 
             finally:
                 monitor.stop_monitoring()
                 logging.info(json.dumps(monitor.memory_logs))
                 logging.info(json.dumps(monitor.ram_used_mb))
-                monitor.log_metrics()
+                max_mem, start_mem = monitor.log_metrics()
                 metrics["memory_metrics"] = {
                     "timestamps": monitor.timestamps,
                     "gpu_memory_logs": monitor.memory_logs,
                     "start_time": monitor.start_time,
                     "gpu_id": monitor.gpu_id,
                     "ram_used_kb": monitor.ram_used_mb,
-                    "interval": monitor.interval
+                    "interval": monitor.interval,
+                    "peak_mem": max_mem - start_mem
                 }
 
         logging.info(f"===== Timing Metrics : {timingMetrics} ====")
@@ -186,6 +189,10 @@ def doIndexing(
         parameters_level_metrics.append(metrics)
         logging.info("Sleeping for 5 sec for better metrics capturing")
         time.sleep(5)
+
+        # put graph file back in param dict, if index and search
+        if workloadType == WorkloadTypes.INDEX_AND_SEARCH:
+            param["graph_file"] = graph_file
 
     del vectors_dataset
     del xb
@@ -210,7 +217,9 @@ def doSearch(
     workloadToExecute["queriesCount"] = len(xq)
     parameters_level_metrics = []
     for indexingParam in workloadToExecute["indexing-parameters"]:
-        if workloadType in (WorkloadTypes.SEARCH, WorkloadTypes.INDEX_AND_SEARCH):
+        # if workload type is search, then we need to put the graph in param dict
+        # otherwise, if workload is index and search, we assume graph is already in param dict
+        if workloadType == WorkloadTypes.SEARCH:
             dir_path = ensureDir("graphs")
             put_graph_file_name_in_param(
                 workloadToExecute, d, indexType, indexingParam, dir_path
@@ -270,6 +279,11 @@ def put_graph_file_name_in_param(
     str_to_build = f"{workloadToExecute['dataset_name']}_{d}.{indexType.value}"
     sorted_param_keys = sorted(param.keys())
     for key in sorted_param_keys:
-        str_to_build += f"_{key}_{param[key]}"
+        value = str(param[key])
+        special_chars_to_remove = " {}',"
+        for character in special_chars_to_remove:
+            value = value.replace(character, "")
+        value = value.replace(":", "_")
+        str_to_build += f"_{key}_{value}"
     str_to_build += ".graph"
     param["graph_file"] = os.path.join(dir_path, str_to_build)

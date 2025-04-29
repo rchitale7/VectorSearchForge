@@ -5,6 +5,7 @@ import logging
 from timeit import default_timer as timer
 import math
 import numpy as np
+import logging
 
 def indexData(d:int, xb:np.ndarray, ids:np.ndarray, indexingParams:dict, space_type:str, file_to_write:str="gpuIndex.cagra.graph"):
     num_of_parallel_threads = get_omp_num_threads()
@@ -20,15 +21,15 @@ def indexData(d:int, xb:np.ndarray, ids:np.ndarray, indexingParams:dict, space_t
     cagraIndexConfig.graph_degree = 32 if indexingParams.get('graph_degree') == None else indexingParams['graph_degree']
     cagraIndexConfig.device = faiss.get_num_gpus() - 1
     cagraIndexConfig.store_dataset = False
-    cagraIndexConfig.refine_rate = 2.0 if indexingParams.get('refine_rate') == None else indexingParams.get('refine_rate')
+    cagraIndexConfig.refine_rate = 1.0 if indexingParams.get('refine_rate') == None else indexingParams.get('refine_rate')
 
     cagraIndexConfig.build_algo = faiss.graph_build_algo_IVF_PQ
     cagraIndexIVFPQConfig = faiss.IVFPQBuildCagraConfig()
     cagraIndexIVFPQConfig.kmeans_n_iters = 20 if indexingParams.get('kmeans_n_iters') == None else indexingParams['kmeans_n_iters']
     cagraIndexIVFPQConfig.pq_bits = 8 if indexingParams.get('pq_bits') == None else indexingParams['pq_bits']
-    cagraIndexIVFPQConfig.pq_dim = 0 if indexingParams.get('pq_dim') == None else indexingParams['pq_dim']
+    cagraIndexIVFPQConfig.pq_dim = 48 if indexingParams.get('pq_dim') == None else indexingParams['pq_dim']
     cagraIndexIVFPQConfig.n_lists = int(math.sqrt(len(xb))) if indexingParams.get('n_lists') == None else indexingParams['n_lists']
-    cagraIndexIVFPQConfig.kmeans_trainset_fraction = 0.5 if indexingParams.get('kmeans_trainset_fraction') == None else indexingParams['kmeans_trainset_fraction']
+    cagraIndexIVFPQConfig.kmeans_trainset_fraction = 0.1 if indexingParams.get('kmeans_trainset_fraction') == None else indexingParams['kmeans_trainset_fraction']
     cagraIndexIVFPQConfig.force_random_rotation = True
     cagraIndexIVFPQConfig.conservative_memory_allocation = True
     cagraIndexConfig.ivf_pq_params = cagraIndexIVFPQConfig
@@ -38,12 +39,13 @@ def indexData(d:int, xb:np.ndarray, ids:np.ndarray, indexingParams:dict, space_t
     cagraIndexConfig.ivf_pq_search_params = cagraIndexSearchIVFPQConfig
 
     print("Creating GPU Index.. with IVF_PQ")
+    logging.info(f"Config:  {cagraIndexConfig.ivf_pq_params}")
     cagraIVFPQIndex = faiss.GpuIndexCagra(res, d, metric, cagraIndexConfig)
     idMapIVFPQIndex = faiss.IndexIDMap(cagraIVFPQIndex)
 
     t1 = timer()
     logging.info("Indexing data on GPU")
-    indexDataInIndex(idMapIVFPQIndex, ids, xb)
+    idMapIVFPQIndex.add_with_ids(xb, ids)
     t2 = timer()
     indexTime = t2 - t1
     t1 = timer()
@@ -63,9 +65,9 @@ def indexData(d:int, xb:np.ndarray, ids:np.ndarray, indexingParams:dict, space_t
     }
 
 
-@timer_func
-def indexDataInIndex(index: faiss.Index, ids, xb):
-    index.add_with_ids(xb, ids)
+# @timer_func
+# def indexDataInIndex(index: faiss.Index, ids, xb):
+#     index.add_with_ids(xb, ids)
 
 
 @timer_func

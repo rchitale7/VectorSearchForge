@@ -10,7 +10,7 @@ from benchmarking.utils.common_utils import ensureDir, formatTimingMetricsValue,
 
 def persistMetricsAsCSV(workloadType: WorkloadTypes, allMetrics: dict, workloadName: str, indexType: IndexTypes):
     file_path = ensureDir(f"results/{workloadName}")
-    fields = ["workload-name", "indexType", "dataset-name", "dimensions", "vectors-count", "queries-count", "indexing-params", "index-creation-time", "gpu-to-cpu-index-conversion-time", "write-to-file-time", "write-index-time", "total-build-time", "search-parameter", "search-time", "unit", "search-throughput", "recall@100", "recall@1"]
+    fields = ["workload-name", "indexType", "dataset-name", "dimensions", "vectors-count", "queries-count", "indexing-params", "index-creation-time", "gpu-to-cpu-index-conversion-time", "write-to-file-time", "write-index-time", "total-build-time", "peak-memory-usage", "search-parameter", "search-time", "unit", "search-throughput", "recall@100", "recall@1"]
     rows = []
     if workloadType == WorkloadTypes.INDEX:
         logging.error("This type of workload is not supported for writing data in csv")
@@ -46,6 +46,7 @@ def persistMetricsAsCSV(workloadType: WorkloadTypes, allMetrics: dict, workloadN
                 row["gpu-to-cpu-index-conversion-time"] = formatTimingMetricsValue(indexingMetrics[indexingParamItr]["indexing-timingMetrics"].get("gpu_to_cpu_index_conversion_time"))
                 row["write-to-file-time"] = formatTimingMetricsValue(indexingMetrics[indexingParamItr]["indexing-timingMetrics"].get("write_to_file_time"))
                 row["total-build-time"] = formatTimingMetricsValue(indexingMetrics[indexingParamItr]["indexing-timingMetrics"]["totalTime"])
+                row["peak-memory-usage"] = formatTimingMetricsValue(indexingMetrics[indexingParamItr]["memory_metrics"]["peak_mem"])
                 if searchParamItr % len(workloadDetails["search-parameters"]) == 0:
                     indexingParamItr = indexingParamItr + 1
             rows.append(row)

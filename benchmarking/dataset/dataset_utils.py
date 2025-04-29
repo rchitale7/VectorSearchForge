@@ -102,6 +102,6 @@ def prepare_search_dataset(datasetFile: str, normalize: bool = None) -> tuple[in
         logging.info("Doing normalization...")
         xq = xq / np.linalg.norm(xq)
         logging.info("Completed normalization...")
-    # save some disk space
-    os.remove(datasetFile)
+    # # save some disk space
+    # os.remove(datasetFile)
     return d, xq, gt

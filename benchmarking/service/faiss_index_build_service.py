@@ -5,13 +5,12 @@ from core.common.models.index_builder.faiss import (
     FaissGPUIndexCagraBuilder,
     FaissIndexHNSWCagraBuilder,
 )
-from core.index_builder.index_builder_utils import (
-    calculate_ivf_pq_n_lists,
-    get_omp_num_threads,
-)
+
+from benchmarking.utils.common_utils import get_omp_num_threads
 from core.index_builder.interface import IndexBuildService
 from benchmarking.decorators.timer import timer_func
 from timeit import default_timer as timer
+import logging
 
 class FaissIndexBuildService(IndexBuildService):
     """
@@ -23,7 +22,7 @@ class FaissIndexBuildService(IndexBuildService):
     """
 
     def __init__(self):
-        self.omp_num_threads = get_omp_num_threads()
+        self.omp_num_threads = 2
 
     def build_index(
         self,
@@ -43,7 +42,7 @@ class FaissIndexBuildService(IndexBuildService):
             faiss.omp_set_num_threads(self.omp_num_threads)
 
             space_type = (
-                SpaceType("L2")
+                SpaceType.L2
                 if workloadToExecute.get("space-type") is None
                 else SpaceType(workloadToExecute.get("space-type"))
             )

@@ -1,9 +1,7 @@
 FROM opensearchstaging/remote-vector-index-builder:faiss-base-latest
 
 USER root
-RUN apt-get update && apt-get upgrade -y && apt-get install libjemalloc2
-RUN conda install -c conda-forge -c nvidia -c rapidsai cuvs=24.12 
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
+RUN conda install rmm
 USER appuser
 RUN pip install h5py cupy-cuda12x tqdm
 
