@@ -258,6 +258,8 @@ def prepare_indexing_dataset(datasetFile: str, normalize: bool = None, docToRead
     logging.info(f"Total Ids: {len(ids)}")
     logging.info(f"Normalized: {normalize}")
 
+    logging.info("Dataset loaded from file {}, size {:.2f} GiB".format(datasetFile, xb.size*xb.dtype.itemsize/(1<<30)))
+
     return d, xb, ids
 
 
@@ -353,30 +355,32 @@ def indexAndSearchUsingCuvs():
         time.sleep(5)
 
 
-def indexAndSearchUsingFaiss(file, indexingParams={}):
-    d, xb, ids = prepare_indexing_dataset(file)
+def indexAndSearchUsingFaiss(file, indexingParams={}, workloadParams={}):
+    docs_to_read = -1 if workloadParams.get("indexing-docs") is None else int(workloadParams["indexing-docs"])
+    d, xb, ids = prepare_indexing_dataset(file, docToRead=docs_to_read)
     res = faiss.StandardGpuResources()
+    res.noTempMemory()
     metric = faiss.METRIC_L2
     cagraIndexConfig = faiss.GpuIndexCagraConfig()
     cagraIndexConfig.intermediate_graph_degree = 64 if indexingParams.get('intermediate_graph_degree') is None else indexingParams['intermediate_graph_degree']
     cagraIndexConfig.graph_degree = 32 if indexingParams.get('graph_degree') == None else indexingParams['graph_degree']
     cagraIndexConfig.device = faiss.get_num_gpus() - 1
     cagraIndexConfig.store_dataset = False
-    cagraIndexConfig.refine_rate = 2.0 if indexingParams.get('refine_rate') == None else indexingParams.get('refine_rate')
+    cagraIndexConfig.refine_rate = 1.0 if indexingParams.get('refine_rate') == None else indexingParams.get('refine_rate')
     import math
     cagraIndexIVFPQConfig = faiss.IVFPQBuildCagraConfig()
     cagraIndexIVFPQConfig.kmeans_n_iters = 20 if indexingParams.get('kmeans_n_iters') == None else indexingParams['kmeans_n_iters']
     cagraIndexIVFPQConfig.pq_bits = 8 if indexingParams.get('pq_bits') == None else indexingParams['pq_bits']
-    cagraIndexIVFPQConfig.pq_dim = 0 if indexingParams.get('pq_dim') == None else indexingParams['pq_dim']
+    cagraIndexIVFPQConfig.pq_dim = 192 if indexingParams.get('pq_dim') == None else indexingParams['pq_dim']
     cagraIndexIVFPQConfig.n_lists = int(math.sqrt(len(xb))) if indexingParams.get('n_lists') == None else indexingParams['n_lists']
     cagraIndexIVFPQConfig.kmeans_trainset_fraction = 0.5 if indexingParams.get('kmeans_trainset_fraction') == None else indexingParams['kmeans_trainset_fraction']
     cagraIndexIVFPQConfig.force_random_rotation = True
     cagraIndexIVFPQConfig.conservative_memory_allocation = True
-    cagraIndexConfig.ivf_pq_params = cagraIndexIVFPQConfig
+    #cagraIndexConfig.ivf_pq_params = cagraIndexIVFPQConfig
 
     cagraIndexSearchIVFPQConfig = faiss.IVFPQSearchCagraConfig()
     cagraIndexSearchIVFPQConfig.n_probes = 20 if indexingParams.get('n_probes') == None else indexingParams['n_probes']
-    cagraIndexConfig.ivf_pq_search_params = cagraIndexSearchIVFPQConfig
+    #cagraIndexConfig.ivf_pq_search_params = cagraIndexSearchIVFPQConfig
     
     cagraIndexConfig.build_algo = faiss.graph_build_algo_IVF_PQ
     print("Creating GPU Index.. with IVF_PQ")
@@ -392,19 +396,19 @@ def indexAndSearchUsingFaiss(file, indexingParams={}):
     idMapIVFPQIndex.index = cpuIndex
 
     graph_file = "/tmp/files/open-ai.graph"
-    faiss.write_index(idMapIVFPQIndex, graph_file)
+    #faiss.write_index(idMapIVFPQIndex, graph_file)
     del xb
-    del idMapIVFPQIndex
+    #del idMapIVFPQIndex
     import gc
     gc.collect()
-    cagraHNSWIndex:faiss.IndexIDMap = faiss.read_index(graph_file)
-    cagraHNSWIndex.index.base_level_only = True
+    #cagraHNSWIndex:faiss.IndexIDMap = faiss.read_index(graph_file)
+    #cagraHNSWIndex.index.base_level_only = True
     
     hnswParameters = faiss.SearchParametersHNSW()
     hnswParameters.efSearch = 256
 
     def search(q, k, params):
-        D, ids = cagraHNSWIndex.search(x=q, k=k, params=params)
+        D, ids = idMapIVFPQIndex.search(x=q, k=k, params=params)
         return ids
 
     d, xq, gt = prepare_search_dataset(file)
@@ -419,14 +423,14 @@ def indexAndSearchUsingFaiss(file, indexingParams={}):
 
 if __name__ == "__main__":
     try:
-        # workloadToExecute = {
-        #     "download_url": "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/open-ai-1536-temp.hdf5?download=true",
-        #     "dataset_name": "open-ai-1536"
-        # }
-        # file = downloadDataSetForWorkload(workloadToExecute)
+        workloadToExecute = {
+            "download_url": "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/open-ai-1536-temp.hdf5?download=true",
+            "dataset_name": "open-ai-1536"
+        }
+        file = downloadDataSetForWorkload(workloadToExecute)
 
-        # indexAndSearchUsingFaiss(file)
-        indexAndSearchUsingCuvs()
+        indexAndSearchUsingFaiss(file)
+        #indexAndSearchUsingCuvs()
     except Exception as e:
         logging.error("Error in main execution:", exc_info=True)
     
