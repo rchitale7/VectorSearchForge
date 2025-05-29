@@ -12,6 +12,7 @@ import h5py
 from typing import cast
 
 import logging
+from timeit import default_timer as timer
 
 import faiss
 
@@ -24,8 +25,8 @@ logging.basicConfig(
     ]
 )
 
-import rmm
-rmm.reinitialize(logging=True, log_file_name='/tmp/files/rmm_log.csv')
+# import rmm
+# rmm.reinitialize(logging=True, log_file_name='/tmp/files/rmm_log.csv')
 
 class Context(Enum):
     """DataSet context enum. Can be used to add additional context for how a
@@ -246,6 +247,16 @@ def prepare_indexing_dataset(datasetFile: str, normalize: bool = None, docToRead
     logging.info(f"Reading data set from file: {datasetFile}")
     index_dataset: HDF5DataSet = HDF5DataSet(datasetFile, Context.INDEX)
 
+    dir_path = ensureDir("numpy_files")
+    name = datasetFile.split("/")[-1].split(".")[0]
+
+    if os.path.exists(f"{dir_path}/{name}.npy"):
+        logging.info(f"Dataset {name} exists")
+        xb = np.load(f"{dir_path}/{name}.npy")
+        d = len(xb[0])
+        ids = [i for i in range(len(xb))]
+        return d, xb, ids
+
     logging.info(f"Total number of docs that we will read for indexing: {index_dataset.size() if docToRead == -1 else docToRead}")
     xb: np.ndarray = index_dataset.read(index_dataset.size() if docToRead == -1 or docToRead is None else docToRead).astype(dtype = np.float32)
     d: int = len(xb[0])
@@ -255,11 +266,9 @@ def prepare_indexing_dataset(datasetFile: str, normalize: bool = None, docToRead
         xb = xb / np.linalg.norm(xb)
         logging.info("Completed normalization...")
 
-    # dir_path = ensureDir("numpy_files")
-    # name = datasetFile.split("/")[-1].split(".")[0]
-    # np.save(f"{dir_path}/{name}.npy",xb)
-    # del xb
-    # xb = np.load(f"{dir_path}/{name}.npy", mmap_mode='r+')
+    np.save(f"{dir_path}/{name}.npy",xb)
+    del xb
+    xb = np.load(f"{dir_path}/{name}.npy")
     logging.info("Dataset info : ")
     logging.info(f"Dimensions: {d}")
     logging.info(f"Total Vectors: {len(xb)}")
@@ -288,9 +297,9 @@ def prepare_search_dataset(datasetFile: str, normalize: bool = None) -> tuple[in
 def custom_excepthook(exc_type, exc_value, exc_traceback):
     try:
         # First log the original error
-        logging.error("An unhandled exception occurred:", 
-                     exc_info=(exc_type, exc_value, exc_traceback))
-        
+        logging.error("An unhandled exception occurred:",
+                      exc_info=(exc_type, exc_value, exc_traceback))
+
         # If working with CUDA/GPU operations, log memory info
         try:
             import cupy as cp
@@ -313,28 +322,28 @@ def indexAndSearchUsingCuvs():
     import cupy as cp
 
     workloads = [
-        {
-            "download_url": "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/coherev2-dbpedia.hdf5?download=true",
-            "dataset_name": "coherev2-dbpedia",
-            "normalize": False
-        },
+        #{
+        #    "download_url": "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/coherev2-dbpedia.hdf5?download=true",
+        #    "dataset_name": "coherev2-dbpedia",
+        #    "normalize": False
+        #},
         {
             "download_url": "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/FlickrImagesTextQueries.hdf5?download=true",
             "dataset_name": "FlickrImagesTextQueries",
-            "normalize": True
-        },
-        {
-            "download_url": "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/marco_tasb.hdf5?download=true",
-            "dataset_name": "marco_tasb",
             "normalize": False
         },
-        {
-            "download_url": "https://dbyiw3u3rf9yr.cloudfront.net/corpora/vectorsearch/cohere-wikipedia-22-12-en-embeddings/documents-1m.hdf5.bz2",
-            "dataset_name": "cohere-768-ip",
-            "compressed": True,
-            "compression-type": "bz2",
-            "normalize": False
-        }
+        #{
+        #    "download_url": "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/marco_tasb.hdf5?download=true",
+        #    "dataset_name": "marco_tasb",
+        #    "normalize": False
+        #},
+        #{
+        #    "download_url": "https://dbyiw3u3rf9yr.cloudfront.net/corpora/vectorsearch/cohere-wikipedia-22-12-en-embeddings/documents-1m.hdf5.bz2",
+        #    "dataset_name": "cohere-768-ip",
+        #    "compressed": True,
+        #    "compression-type": "bz2",
+        #    "normalize": False
+        #}
     ]
 
     for workload in workloads:
@@ -342,7 +351,7 @@ def indexAndSearchUsingCuvs():
         logging.info(f"Running for workload {workload['dataset_name']}")
         file = downloadDataSetForWorkload(workload)
         d, xb, ids = prepare_indexing_dataset(file, workload["normalize"])
-        index_params = cagra.IndexParams(intermediate_graph_degree=64,graph_degree=32,build_algo='ivf_pq', metric="sqeuclidean")
+        index_params = cagra.IndexParams(intermediate_graph_degree=64,graph_degree=32,build_algo='ivf_pq', metric="inner_product")
 
         index = cagra.build(index_params, xb)
 
@@ -354,9 +363,11 @@ def indexAndSearchUsingCuvs():
         distances, neighbors = cagra.search(search_params, index, xq, 100)
 
         logging.info("Search is done")
-        neighbors = cp.asnumpy(neighbors)
+        neighbors = cp.asarray(neighbors)
+        numpy_array = np.empty_like(neighbors.get())
+        neighbors.get(out=numpy_array)
 
-        logging.info(f"Recall at k=100 is : {recall_at_r(neighbors, gt, 100, 100, len(xq))}")
+        logging.info(f"Recall at k=100 is : {recall_at_r(numpy_array, gt, 100, 100, len(xq))}")
         logging.info("Sleeping for 5 seconds")
         time.sleep(5)
 
@@ -367,107 +378,135 @@ def indexAndSearchUsingFaiss(indexingParams={}):
         return ids
 
     workloads = [
-        # {
-        #     "download_url": "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/coherev2-dbpedia.hdf5?download=true",
-        #     "dataset_name": "coherev2-dbpedia",
-        #     "normalize": False
-        # },
-        # {
-        #     "download_url": "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/FlickrImagesTextQueries.hdf5?download=true",
-        #     "dataset_name": "FlickrImagesTextQueries",
-        #     "normalize": True
-        # },
-        # {
-        #     "download_url": "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/marco_tasb.hdf5?download=true",
-        #     "dataset_name": "marco_tasb",
-        #     "normalize": False
-        # },
+        #{
+        #    "download_url": "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/coherev2-dbpedia.hdf5?download=true",
+        #    "dataset_name": "coherev2-dbpedia",
+        #    "normalize": False
+        #},
+        #{
+        #    "download_url": "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/marco_tasb.hdf5?download=true",
+        #    "dataset_name": "marco_tasb",
+        #    "normalize": False
+        #},
         {
-            "download_url": "https://dbyiw3u3rf9yr.cloudfront.net/corpora/vectorsearch/cohere-wikipedia-22-12-en-embeddings/documents-1m.hdf5.bz2",
-            "dataset_name": "cohere-768-ip",
-            "compressed": True,
-            "compression-type": "bz2",
-            "normalize": False
-        },
-        {
-            "download_url": "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/open-ai-1536-temp.hdf5?download=true",
-            "dataset_name": "open-ai-1536"
+           "download_url": "https://dbyiw3u3rf9yr.cloudfront.net/corpora/vectorsearch/cohere-wikipedia-22-12-en-embeddings/documents-10m.hdf5.bz2",
+           "dataset_name": "cohere-10M-768-ip",
+           "compressed": True,
+           "compression-type": "bz2",
+           "normalize": False,
+           "inner_product": True,
+           "dimension": 768
         }
+        #{
+        #     "download_url": "https://dbyiw3u3rf9yr.cloudfront.net/corpora/vectorsearch/cohere-wikipedia-22-12-en-embeddings/documents-1m.hdf5.bz2",
+        #     "dataset_name": "cohere-768-ip",
+        #     "compressed": True,
+        #     "compression-type": "bz2",
+        #     "normalize": False,
+        #     "inner_product": True,
+        #     "dimension": 768
+        #},
+        # {
+        #     "download_url": "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/open-ai-1536-temp.hdf5?download=true",
+        #     "dataset_name": "open-ai-1536",
+        #     "dimension": 1536
+        # }
+        #{
+        #    "download_url": "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/FlickrImagesTextQueries.hdf5?download=true",
+        #    "dataset_name": "FlickrImagesTextQueries",
+        #    "normalize": False
+        #}
     ]
 
     for workload in workloads:
-        logging.info(f"Running for workload {workload['dataset_name']}")
-        file = downloadDataSetForWorkload(workload)
-        d, xb, ids = prepare_indexing_dataset(file)
-        res = faiss.StandardGpuResources()
-        # res.setLogMemoryAllocations(True)
-        metric = faiss.METRIC_INNER_PRODUCT
-        cagraIndexConfig = faiss.GpuIndexCagraConfig()
-        cagraIndexConfig.intermediate_graph_degree = 64 if indexingParams.get('intermediate_graph_degree') is None else indexingParams['intermediate_graph_degree']
-        cagraIndexConfig.graph_degree = 32 if indexingParams.get('graph_degree') == None else indexingParams['graph_degree']
-        cagraIndexConfig.device = faiss.get_num_gpus() - 1
-        cagraIndexConfig.store_dataset = False
-        cagraIndexConfig.refine_rate = 2.0 if indexingParams.get('refine_rate') == None else indexingParams.get('refine_rate')
-        import math
-        cagraIndexIVFPQConfig = faiss.IVFPQBuildCagraConfig()
-        cagraIndexIVFPQConfig.kmeans_n_iters = 20 if indexingParams.get('kmeans_n_iters') == None else indexingParams['kmeans_n_iters']
-        cagraIndexIVFPQConfig.pq_bits = 8 if indexingParams.get('pq_bits') == None else indexingParams['pq_bits']
-        cagraIndexIVFPQConfig.pq_dim = 0 if indexingParams.get('pq_dim') == None else indexingParams['pq_dim']
-        cagraIndexIVFPQConfig.n_lists = int(math.sqrt(len(xb))) if indexingParams.get('n_lists') == None else indexingParams['n_lists']
-        cagraIndexIVFPQConfig.kmeans_trainset_fraction = 0.5 if indexingParams.get('kmeans_trainset_fraction') == None else indexingParams['kmeans_trainset_fraction']
-        cagraIndexIVFPQConfig.force_random_rotation = True
-        cagraIndexIVFPQConfig.conservative_memory_allocation = True
-        cagraIndexConfig.ivf_pq_build_params = cagraIndexIVFPQConfig
+        for compression in [0]:
+            logging.info(f"Running for workload {workload['dataset_name']}")
+            file = downloadDataSetForWorkload(workload)
+            d, xb, ids = prepare_indexing_dataset(file)
+            res = faiss.StandardGpuResources()
+            res.noTempMemory()
+            metric = faiss.METRIC_INNER_PRODUCT if ('inner_product' in workload and workload['inner_product']) == True else faiss.METRIC_L2
+            cagraIndexConfig = faiss.GpuIndexCagraConfig()
+            cagraIndexConfig.intermediate_graph_degree = 64 if indexingParams.get('intermediate_graph_degree') is None else indexingParams['intermediate_graph_degree']
+            cagraIndexConfig.graph_degree = 32 if indexingParams.get('graph_degree') == None else indexingParams['graph_degree']
+            cagraIndexConfig.device = faiss.get_num_gpus() - 1
+            cagraIndexConfig.store_dataset = False
+            cagraIndexConfig.refine_rate = 2.0 if indexingParams.get('refine_rate') == None else indexingParams.get('refine_rate')
+            import math
+            cagraIndexIVFPQConfig = faiss.IVFPQBuildCagraConfig()
+            cagraIndexIVFPQConfig.kmeans_n_iters = 20 if indexingParams.get('kmeans_n_iters') == None else indexingParams['kmeans_n_iters']
+            cagraIndexIVFPQConfig.pq_bits = 8 if indexingParams.get('pq_bits') == None else indexingParams['pq_bits']
+            cagraIndexIVFPQConfig.pq_dim = 0 if compression == 0 else (workload['dimension'] // compression)
+            cagraIndexIVFPQConfig.n_lists = int(math.sqrt(len(xb))) if indexingParams.get('n_lists') == None else indexingParams['n_lists']
+            cagraIndexIVFPQConfig.kmeans_trainset_fraction = 0.1 if indexingParams.get('kmeans_trainset_fraction') == None else indexingParams['kmeans_trainset_fraction']
+            cagraIndexIVFPQConfig.force_random_rotation = True
+            cagraIndexIVFPQConfig.conservative_memory_allocation = True
+            cagraIndexConfig.ivf_pq_params = cagraIndexIVFPQConfig
 
-        cagraIndexSearchIVFPQConfig = faiss.IVFPQSearchCagraConfig()
-        cagraIndexSearchIVFPQConfig.n_probes = 20 if indexingParams.get('n_probes') == None else indexingParams['n_probes']
-        cagraIndexConfig.ivf_pq_search_params = cagraIndexSearchIVFPQConfig
+            cagraIndexSearchIVFPQConfig = faiss.IVFPQSearchCagraConfig()
+            cagraIndexSearchIVFPQConfig.n_probes = 20 if indexingParams.get('n_probes') == None else indexingParams['n_probes']
+            cagraIndexConfig.ivf_pq_search_params = cagraIndexSearchIVFPQConfig
 
-        cagraIndexConfig.build_algo = faiss.graph_build_algo_IVF_PQ
-        print("Creating GPU Index.. with IVF_PQ")
-        cagraIVFPQIndex = faiss.GpuIndexCagra(res, d, metric, cagraIndexConfig)
-        idMapIVFPQIndex = faiss.IndexIDMap(cagraIVFPQIndex)
+            cagraIndexConfig.build_algo = faiss.graph_build_algo_IVF_PQ
+            print("Creating GPU Index.. with IVF_PQ")
+            cagraIVFPQIndex = faiss.GpuIndexCagra(res, d, metric, cagraIndexConfig)
+            idMapIVFPQIndex = faiss.IndexIDMap(cagraIVFPQIndex)
 
-        idMapIVFPQIndex.add_with_ids(xb, ids)
+            t1 = timer()
+            idMapIVFPQIndex.add_with_ids(xb, ids)
+            t2 = timer()
+            index_build_time = t2 - t1
+            logging.info(f"Index build time: {index_build_time:.2f} seconds")
 
-        cpuIndex = faiss.IndexHNSWCagra()
-        cpuIndex.base_level_only = True
+            cpuIndex = faiss.IndexHNSWCagra()
+            cpuIndex.base_level_only = True
+            cpuIndex.own_fields = True
 
-        cagraIVFPQIndex.copyTo(cpuIndex)
-        idMapIVFPQIndex.index = cpuIndex
+            t1 = timer()
+            cagraIVFPQIndex.copyTo(cpuIndex)
+            idMapIVFPQIndex.index = cpuIndex
+            t2 = timer()
+            conversion_time = t2 - t1
+            logging.info(f"Conversion time: {conversion_time:.2f} seconds")
 
-        graph_file = f"/tmp/files/{workload['dataset_name']}.graph"
-        faiss.write_index(idMapIVFPQIndex, graph_file)
-        del xb
-        del idMapIVFPQIndex
-        import gc
-        gc.collect()
-        cagraHNSWIndex:faiss.IndexIDMap = faiss.read_index(graph_file)
-        cagraHNSWIndex.index.base_level_only = True
+            graph_file = f"/tmp/files/{workload['dataset_name']}_{str(compression)}.graph"
+            t1 = timer()
+            faiss.write_index(idMapIVFPQIndex, graph_file)
+            t2 = timer()
+            write_index_time = t2 - t1
+            logging.info(f"Write index time: {write_index_time:.2f} seconds")
+            logging.info(f"Total time: {index_build_time + conversion_time + write_index_time:.2f} seconds")
 
-        hnswParameters = faiss.SearchParametersHNSW()
-        hnswParameters.efSearch = 256
+            del cpuIndex
+            del xb
+            cagraIVFPQIndex.thisown = True
+            idMapIVFPQIndex.own_fields = True
+            del idMapIVFPQIndex
+            del cagraIVFPQIndex
+            import gc
+            gc.collect()
+            cagraHNSWIndex:faiss.IndexIDMap = faiss.read_index(graph_file)
+            cagraHNSWIndex.index.base_level_only = True
+
+            hnswParameters = faiss.SearchParametersHNSW()
+            hnswParameters.efSearch = 256
 
 
-        d, xq, gt = prepare_search_dataset(file)
-        I = []
-        from tqdm import tqdm
-        for query in tqdm(xq, total=len(xq), desc=f"Running queries for ef_search: {hnswParameters.efSearch}"):
-            result = search(np.array([query]), 100, hnswParameters)
-            I.append(result[0])
-        recall_at_k = recall_at_r(I, gt, 100, 100, len(xq))
+            d, xq, gt = prepare_search_dataset(file)
+            I = []
+            from tqdm import tqdm
+            for query in tqdm(xq, total=len(xq), desc=f"Running queries for ef_search: {hnswParameters.efSearch}"):
+                result = search(np.array([query]), 100, hnswParameters)
+                I.append(result[0])
+            recall_at_k = recall_at_r(I, gt, 100, 100, len(xq))
 
-        logging.info(f"Recall at 100 using faiss : is {recall_at_k}")
-        logging.info("Sleeping for 5 seconds")
-        time.sleep(5)
+            logging.info(f"Recall at 100 using faiss : is {recall_at_k}")
+            os.remove(graph_file)
+            logging.info("Sleeping for 5 seconds")
+            time.sleep(5)
 
 if __name__ == "__main__":
     try:
-        # workloadToExecute = {
-        #     "download_url": "https://huggingface.co/datasets/navneet1v/datasets/resolve/main/open-ai-1536-temp.hdf5?download=true",
-        #     "dataset_name": "open-ai-1536"
-        # }
-        # file = downloadDataSetForWorkload(workloadToExecute)
 
         indexAndSearchUsingFaiss()
         #indexAndSearchUsingCuvs()
