@@ -128,6 +128,7 @@ def doIndexing(
     for param in tqdm(workloadToExecute["indexing-parameters"]):
         if indexType == IndexTypes.GPU:
             for compression in workloadToExecute['compression']:
+                compression = int(compression)
                 if 'compression' != 0:
                     param["ivf_pq_params"]["pq_dim"] = workloadToExecute["dimension"] / compression
                 else:
