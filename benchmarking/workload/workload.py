@@ -126,13 +126,67 @@ def doIndexing(
 
     parameters_level_metrics = []
     for param in tqdm(workloadToExecute["indexing-parameters"]):
-        prepare_env_for_indexing(workloadToExecute, indexType, param)
-        timingMetrics = None
-        metrics = {"indexing-param": param}
-        logging.info(
-            f"================ Running configuration: {param} ================"
-        )
-        if indexType == IndexTypes.CPU:
+        if indexType == IndexTypes.GPU:
+            for compression in workloadToExecute['compression']:
+                if 'compression' != 0:
+                    param["ivf_pq_params"]["pq_dim"] = workloadToExecute["dimension"] / compression
+                else:
+                    param["ivf_pq_params"]["pq_dim"] = 0
+
+                prepare_env_for_indexing(workloadToExecute, indexType, param)
+                timingMetrics = None
+                metrics = {"indexing-param": param}
+                logging.info(
+                    f"================ Running configuration: {param} ================"
+                )
+
+                monitor = GPUMemoryMonitor()
+
+                try:
+                    monitor.start_monitoring()
+                    param["ivf_pq_build_params"]["n_lists"] = calculate_ivf_pq_n_lists(
+                        len(xb)
+                    )
+                    param["ivf_pq_build_params"]["force_random_rotation"] = True
+
+                    faiss_index_build_service = FaissIndexBuildService()
+                    timingMetrics = faiss_index_build_service.build_index(
+                        param,
+                        workloadToExecute["search-parameters"][0],
+                        vectors_dataset,
+                        workloadToExecute,
+                        param["graph_file"],
+                    )
+                    metrics["indexing-timingMetrics"] = timingMetrics
+                    time.sleep(3)
+
+                finally:
+                    monitor.stop_monitoring()
+                    logging.info(json.dumps(monitor.memory_logs))
+                    logging.info(json.dumps(monitor.ram_used_mb))
+                    monitor.log_metrics()
+                    metrics["memory_metrics"] = {
+                        "timestamps": monitor.timestamps,
+                        "gpu_memory_logs": monitor.memory_logs,
+                        "start_time": monitor.start_time,
+                        "gpu_id": monitor.gpu_id,
+                        "ram_used_kb": monitor.ram_used_mb,
+                        "interval": monitor.interval
+                    }
+
+                logging.info(f"===== Timing Metrics : {timingMetrics} ====")
+                logging.info(
+                    f"================ Completed configuration: {param} ================"
+                )
+                parameters_level_metrics.append(metrics)
+                logging.info("Sleeping for 5 sec for better metrics capturing")
+                time.sleep(5)
+        else:
+            prepare_env_for_indexing(workloadToExecute, indexType, param)
+            metrics = {"indexing-param": param}
+            logging.info(
+                f"================ Running configuration: {param} ================"
+            )
             from benchmarking.indexing.cpu.create_cpu_index import (
                 indexData as indexDataInCpu,
             )
@@ -141,52 +195,13 @@ def doIndexing(
                 d, xb, ids, param, space_type, file_to_write=param["graph_file"]
             )
 
-        if indexType == IndexTypes.GPU:
-            # from benchmarking.indexing.gpu.create_gpu_index import (indexData as indexDataInGpu,)
-
-            monitor = GPUMemoryMonitor()
-
-            try:
-                monitor.start_monitoring()
-                param["ivf_pq_build_params"]["n_lists"] = calculate_ivf_pq_n_lists(
-                    len(xb)
-                )
-                param["ivf_pq_build_params"]["force_random_rotation"] = True
-
-                faiss_index_build_service = FaissIndexBuildService()
-                timingMetrics = faiss_index_build_service.build_index(
-                    param,
-                    workloadToExecute["search-parameters"][0],
-                    vectors_dataset,
-                    workloadToExecute,
-                    param["graph_file"],
-                )
-                metrics["indexing-timingMetrics"] = timingMetrics
-                # timingMetrics = indexDataInGpu(d, xb, ids, param, space_type, param["graph_file"])
-                time.sleep(3)
-
-            finally:
-                monitor.stop_monitoring()
-                logging.info(json.dumps(monitor.memory_logs))
-                logging.info(json.dumps(monitor.ram_used_mb))
-                monitor.log_metrics()
-                metrics["memory_metrics"] = {
-                    "timestamps": monitor.timestamps,
-                    "gpu_memory_logs": monitor.memory_logs,
-                    "start_time": monitor.start_time,
-                    "gpu_id": monitor.gpu_id,
-                    "ram_used_kb": monitor.ram_used_mb,
-                    "interval": monitor.interval
-                }
-
-        logging.info(f"===== Timing Metrics : {timingMetrics} ====")
-        logging.info(
-            f"================ Completed configuration: {param} ================"
-        )
-        parameters_level_metrics.append(metrics)
-        logging.info("Sleeping for 5 sec for better metrics capturing")
-        time.sleep(5)
-
+            logging.info(f"===== Timing Metrics : {timingMetrics} ====")
+            logging.info(
+                f"================ Completed configuration: {param} ================"
+            )
+            parameters_level_metrics.append(metrics)
+            logging.info("Sleeping for 5 sec for better metrics capturing")
+            time.sleep(5)
     del vectors_dataset
     del xb
     del ids
@@ -194,6 +209,7 @@ def doIndexing(
         "workload-details": workloadToExecute,
         "indexing-metrics": parameters_level_metrics,
     }
+
 
 
 def doSearch(

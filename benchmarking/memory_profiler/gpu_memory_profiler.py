@@ -68,10 +68,13 @@ class GPUMemoryMonitor:
     def log_metrics(self):
         df = pd.DataFrame(self.memory_logs)
         max_memory = df['used_memory'].max()
-        min_memory = df['used_memory'].min()
+        start_memory = df['used_memory'].iloc[0]
+        end_memory = df['used_memory'].iloc[-1]
+        logging.info(f"Start GPU Memory: ,{start_memory}")
+        logging.info(f"End GPU Memory: ,{end_memory}")
         logging.info(f"Max GPU Memory: ,{max_memory}")
-        logging.info(f"Min GPU Memory: ,{min_memory}")
-        logging.info(f"Net GPU Memory used:, {max_memory-min_memory}")
+        logging.info(f"Net GPU Memory used:, {max_memory-start_memory}")
+        return max_memory, start_memory, end_memory
 
     def __del__(self):
         """Cleanup NVML on object destruction"""

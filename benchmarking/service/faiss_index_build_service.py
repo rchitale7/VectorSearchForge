@@ -43,7 +43,7 @@ class FaissIndexBuildService(IndexBuildService):
             faiss.omp_set_num_threads(self.omp_num_threads)
 
             space_type = (
-                SpaceType("L2")
+                SpaceType.L2
                 if workloadToExecute.get("space-type") is None
                 else SpaceType(workloadToExecute.get("space-type"))
             )
