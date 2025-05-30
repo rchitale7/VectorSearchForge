@@ -10,21 +10,31 @@ import logging
 
 
 class GPUMemoryMonitor:
-    def __init__(self, gpu_id=0, interval: float = 0.1):
+    def __init__(self, id: str, gpu_id=0, interval: float = 0.1):
         self.interval = interval
         self.gpu_id = gpu_id
         self.memory_logs = []
+        self.cpu_memory_logs = []
         self.start_time = None
         self.ram_used_mb: List[float] = []
         self.timestamps: List[float] = []
         self.is_monitoring = False
         self._monitor_thread = None
         self.process = psutil.Process()
+        self.id = id
         
         # Initialize NVML
         nvidia_smi.nvmlInit()
         self.handle = nvidia_smi.nvmlDeviceGetHandleByIndex(gpu_id)
 
+    def _get_cpu_memory_info(self):
+        """Get current CPU memory usage in MB"""
+        cpu_info = psutil.virtual_memory()
+        return {
+            'used': cpu_info.used / 1024 / 1024,  # Convert to MB
+            'free': cpu_info.available / 1024 / 1024,
+            'total': cpu_info.total / 1024 / 1024
+        }
     def _get_memory_info(self):
         """Get current GPU memory usage in MB"""
         info = nvidia_smi.nvmlDeviceGetMemoryInfo(self.handle)
@@ -40,9 +50,18 @@ class GPUMemoryMonitor:
             self.timestamps.append(time.time())
             memory_info = self._get_memory_info()
             self.memory_logs.append({
-                'used_memory': memory_info['used'],
-                'free_memory': memory_info['free'],
-                'total_memory': memory_info['total']
+                'gpu_used_memory': memory_info['used'],
+                'gpu_free_memory': memory_info['free'],
+                'gpu_total_memory': memory_info['total'],
+                "id": self.id
+            })
+
+            cpu_memory_info = self._get_cpu_memory_info()
+            self.cpu_memory_logs.append({
+                'cpu_used_memory': cpu_memory_info['used'],
+                'cpu_free_memory': cpu_memory_info['free'],
+                'cpu_total_memory': cpu_memory_info['total'],
+                "id": self.id
             })
             self.ram_used_mb.append(self._get_process_memory_mb())
             time.sleep(self.interval)  # 100ms sampling rate
@@ -56,6 +75,7 @@ class GPUMemoryMonitor:
         self.start_time = time.time()
         self.is_monitoring = True
         self.memory_logs = []
+        self.cpu_memory_logs = []
         self._monitor_thread = threading.Thread(target=self._monitoring_loop)
         self._monitor_thread.start()
 
@@ -74,6 +94,18 @@ class GPUMemoryMonitor:
         logging.info(f"End GPU Memory: ,{end_memory}")
         logging.info(f"Max GPU Memory: ,{max_memory}")
         logging.info(f"Net GPU Memory used:, {max_memory-start_memory}")
+        return max_memory, start_memory, end_memory
+
+    def log_cpu_metrics(self):
+        """Log CPU memory usage metrics"""
+        df = pd.DataFrame(self.cpu_memory_logs)
+        max_memory = df['used_memory'].max()
+        start_memory = df['used_memory'].iloc[0]
+        end_memory = df['used_memory'].iloc[-1]
+        logging.info(f"Start CPU Memory: ,{start_memory}")
+        logging.info(f"End CPU Memory: ,{end_memory}")
+        logging.info(f"Max CPU Memory: ,{max_memory}")
+        logging.info(f"Net CPU Memory used:, {max_memory-start_memory}")
         return max_memory, start_memory, end_memory
 
     def __del__(self):

@@ -134,13 +134,14 @@ def doIndexing(
                     param["ivf_pq_params"]["pq_dim"] = 0
 
                 prepare_env_for_indexing(workloadToExecute, indexType, param)
+                graph_file = param["graph_file"]
                 timingMetrics = None
                 metrics = {"indexing-param": param}
                 logging.info(
                     f"================ Running configuration: {param} ================"
                 )
 
-                monitor = GPUMemoryMonitor()
+                monitor = GPUMemoryMonitor(graph_file)
 
                 try:
                     monitor.start_monitoring()
@@ -163,15 +164,21 @@ def doIndexing(
                 finally:
                     monitor.stop_monitoring()
                     logging.info(json.dumps(monitor.memory_logs))
+                    logging.info(json.dumps(monitor.cpu_memory_logs))
                     logging.info(json.dumps(monitor.ram_used_mb))
-                    monitor.log_metrics()
+                    max_mem, start_mem, end_mem = monitor.log_metrics()
+                    cpu_max, cpu_start, cpu_end = monitor.log_cpu_metrics()
                     metrics["memory_metrics"] = {
                         "timestamps": monitor.timestamps,
                         "gpu_memory_logs": monitor.memory_logs,
                         "start_time": monitor.start_time,
                         "gpu_id": monitor.gpu_id,
                         "ram_used_kb": monitor.ram_used_mb,
-                        "interval": monitor.interval
+                        "interval": monitor.interval,
+                        "peak_gpu_mem": max_mem - start_mem,
+                        "leftover_gpu_mem": end_mem - start_mem,
+                        "peak_cpu_mem": cpu_max - cpu_start,
+                        "leftover_cpu_mem": cpu_end - cpu_start
                     }
 
                 logging.info(f"===== Timing Metrics : {timingMetrics} ====")
@@ -181,8 +188,12 @@ def doIndexing(
                 parameters_level_metrics.append(metrics)
                 logging.info("Sleeping for 5 sec for better metrics capturing")
                 time.sleep(5)
+
+                if workloadType == WorkloadTypes.INDEX_AND_SEARCH:
+                    param["graph_file"] = graph_file
         else:
             prepare_env_for_indexing(workloadToExecute, indexType, param)
+            graph_file = param["graph_file"]
             metrics = {"indexing-param": param}
             logging.info(
                 f"================ Running configuration: {param} ================"
@@ -202,6 +213,9 @@ def doIndexing(
             parameters_level_metrics.append(metrics)
             logging.info("Sleeping for 5 sec for better metrics capturing")
             time.sleep(5)
+
+            if workloadType == WorkloadTypes.INDEX_AND_SEARCH:
+                param["graph_file"] = graph_file
     del vectors_dataset
     del xb
     del ids
@@ -226,7 +240,9 @@ def doSearch(
     workloadToExecute["queriesCount"] = len(xq)
     parameters_level_metrics = []
     for indexingParam in workloadToExecute["indexing-parameters"]:
-        if workloadType in (WorkloadTypes.SEARCH, WorkloadTypes.INDEX_AND_SEARCH):
+        # if workload type is search, then we need to put the graph in param dict
+        # otherwise, if workload is index and search, we assume graph is already in param dict
+        if workloadType == WorkloadTypes.SEARCH:
             dir_path = ensureDir("graphs")
             put_graph_file_name_in_param(
                 workloadToExecute, d, indexType, indexingParam, dir_path
@@ -281,11 +297,16 @@ def readAllWorkloads():
 
 
 def put_graph_file_name_in_param(
-    workloadToExecute: dict, d: int, indexType: IndexTypes, param: dict, dir_path: str
+        workloadToExecute: dict, d: int, indexType: IndexTypes, param: dict, dir_path: str
 ):
     str_to_build = f"{workloadToExecute['dataset_name']}_{d}.{indexType.value}"
     sorted_param_keys = sorted(param.keys())
     for key in sorted_param_keys:
-        str_to_build += f"_{key}_{param[key]}"
+        value = str(param[key])
+        special_chars_to_remove = " {}',"
+        for character in special_chars_to_remove:
+            value = value.replace(character, "")
+        value = value.replace(":", "_")
+        str_to_build += f"_{key}_{value}"
     str_to_build += ".graph"
     param["graph_file"] = os.path.join(dir_path, str_to_build)
