@@ -75,9 +75,6 @@ def prepare_indexing_dataset(datasetFile: str, normalize: bool = None, docToRead
         xb = xb / np.linalg.norm(xb)
         logging.info("Completed normalization...")
 
-    np.save(f"{dir_path}/{dataset_name}.npy",xb)
-    del xb
-    xb = np.load(f"{dir_path}/{dataset_name}.npy", mmap_mode='r+')
     logging.info("Dataset info : ")
     logging.info(f"Dimensions: {d}")
     logging.info(f"Total Vectors: {len(xb)}")
