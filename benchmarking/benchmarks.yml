@@ -11,20 +11,20 @@ gpu:
     indexing-parameters:
       - { "refine_rate": 1, "ivf_pq_params": {"kmeans_trainset_fraction": 0.1 }}
       - { "refine_rate": 1, "ivf_pq_params": {"kmeans_trainset_fraction": 0.2 }}
-#      - { "refine_rate": 1, "ivf_pq_params": {"kmeans_trainset_fraction": 0.4 }}
-#      - { "refine_rate": 1, "ivf_pq_params": {"kmeans_trainset_fraction": 0.5 }}
+      - { "refine_rate": 1, "ivf_pq_params": {"kmeans_trainset_fraction": 0.4 }}
+      - { "refine_rate": 1, "ivf_pq_params": {"kmeans_trainset_fraction": 0.5 }}
       - { "refine_rate": 2, "ivf_pq_params": {"kmeans_trainset_fraction": 0.1 }}
-#      - { "refine_rate": 2, "ivf_pq_params": {"kmeans_trainset_fraction": 0.2 }}
-#      - { "refine_rate": 2, "ivf_pq_params": {"kmeans_trainset_fraction": 0.4 }}
-#      - { "refine_rate": 2, "ivf_pq_params": {"kmeans_trainset_fraction": 0.5 }}
-#      - { "refine_rate": 3, "ivf_pq_params": {"kmeans_trainset_fraction": 0.1 }}
-#      - { "refine_rate": 3, "ivf_pq_params": {"kmeans_trainset_fraction": 0.2 }}
-#      - { "refine_rate": 3, "ivf_pq_params": {"kmeans_trainset_fraction": 0.4 }}
-#      - { "refine_rate": 3, "ivf_pq_params": {"kmeans_trainset_fraction": 0.5 }}
-#      - { "refine_rate": 4, "ivf_pq_params": {"kmeans_trainset_fraction": 0.1 }}
-#      - { "refine_rate": 4, "ivf_pq_params": {"kmeans_trainset_fraction": 0.2 }}
-#      - { "refine_rate": 4, "ivf_pq_params": {"kmeans_trainset_fraction": 0.4 }}
-#      - { "refine_rate": 4, "ivf_pq_params": {"kmeans_trainset_fraction": 0.5 }}
+      - { "refine_rate": 2, "ivf_pq_params": {"kmeans_trainset_fraction": 0.2 }}
+      - { "refine_rate": 2, "ivf_pq_params": {"kmeans_trainset_fraction": 0.4 }}
+      - { "refine_rate": 2, "ivf_pq_params": {"kmeans_trainset_fraction": 0.5 }}
+      - { "refine_rate": 3, "ivf_pq_params": {"kmeans_trainset_fraction": 0.1 }}
+      - { "refine_rate": 3, "ivf_pq_params": {"kmeans_trainset_fraction": 0.2 }}
+      - { "refine_rate": 3, "ivf_pq_params": {"kmeans_trainset_fraction": 0.4 }}
+      - { "refine_rate": 3, "ivf_pq_params": {"kmeans_trainset_fraction": 0.5 }}
+      - { "refine_rate": 4, "ivf_pq_params": {"kmeans_trainset_fraction": 0.1 }}
+      - { "refine_rate": 4, "ivf_pq_params": {"kmeans_trainset_fraction": 0.2 }}
+      - { "refine_rate": 4, "ivf_pq_params": {"kmeans_trainset_fraction": 0.4 }}
+      - { "refine_rate": 4, "ivf_pq_params": {"kmeans_trainset_fraction": 0.5 }}
     search-parameters:
       - {"ef_search": 256}
   ms-marco-384:

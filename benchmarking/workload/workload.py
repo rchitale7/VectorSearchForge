@@ -12,6 +12,8 @@ from benchmarking.utils.common_utils import ensureDir
 import json
 import time
 from tqdm import tqdm
+import numpy as np
+import copy
 
 from core.index_builder.index_builder_utils import (
     calculate_ivf_pq_n_lists,
@@ -128,14 +130,14 @@ def doIndexing(
     for param in tqdm(workloadToExecute["indexing-parameters"]):
         if indexType == IndexTypes.GPU:
             for compression in workloadToExecute['compression']:
+                param = copy.deepcopy(param)
                 compression = int(compression)
-                if 'compression' != 0:
-                    param["ivf_pq_params"]["pq_dim"] = workloadToExecute["dimension"] / compression
+                if compression != 0:
+                    param["ivf_pq_params"]["pq_dim"] = int(workloadToExecute["dimension"] / compression)
                 else:
                     param["ivf_pq_params"]["pq_dim"] = 0
 
-                prepare_env_for_indexing(workloadToExecute, indexType, param)
-                graph_file = param["graph_file"]
+                graph_file = prepare_env_for_indexing(workloadToExecute, indexType, param)
                 timingMetrics = None
                 metrics = {"indexing-param": param}
                 logging.info(
@@ -146,10 +148,6 @@ def doIndexing(
 
                 try:
                     monitor.start_monitoring()
-                    param["ivf_pq_build_params"]["n_lists"] = calculate_ivf_pq_n_lists(
-                        len(xb)
-                    )
-                    param["ivf_pq_build_params"]["force_random_rotation"] = True
 
                     faiss_index_build_service = FaissIndexBuildService()
                     timingMetrics = faiss_index_build_service.build_index(
@@ -157,7 +155,7 @@ def doIndexing(
                         workloadToExecute["search-parameters"][0],
                         vectors_dataset,
                         workloadToExecute,
-                        param["graph_file"],
+                        graph_file,
                     )
                     metrics["indexing-timingMetrics"] = timingMetrics
                     time.sleep(3)
@@ -190,11 +188,8 @@ def doIndexing(
                 logging.info("Sleeping for 5 sec for better metrics capturing")
                 time.sleep(5)
 
-                if workloadType == WorkloadTypes.INDEX_AND_SEARCH:
-                    param["graph_file"] = graph_file
         else:
-            prepare_env_for_indexing(workloadToExecute, indexType, param)
-            graph_file = param["graph_file"]
+            graph_file = prepare_env_for_indexing(workloadToExecute, indexType, param)
             metrics = {"indexing-param": param}
             logging.info(
                 f"================ Running configuration: {param} ================"
@@ -204,7 +199,7 @@ def doIndexing(
             )
 
             timingMetrics = indexDataInCpu(
-                d, xb, ids, param, space_type, file_to_write=param["graph_file"]
+                d, xb, ids, param, space_type, file_to_write=graph_file
             )
 
             logging.info(f"===== Timing Metrics : {timingMetrics} ====")
@@ -215,8 +210,6 @@ def doIndexing(
             logging.info("Sleeping for 5 sec for better metrics capturing")
             time.sleep(5)
 
-            if workloadType == WorkloadTypes.INDEX_AND_SEARCH:
-                param["graph_file"] = graph_file
     del vectors_dataset
     del xb
     del ids
@@ -241,34 +234,67 @@ def doSearch(
     workloadToExecute["queriesCount"] = len(xq)
     parameters_level_metrics = []
     for indexingParam in workloadToExecute["indexing-parameters"]:
-        # if workload type is search, then we need to put the graph in param dict
-        # otherwise, if workload is index and search, we assume graph is already in param dict
-        if workloadType == WorkloadTypes.SEARCH:
+        if indexType == IndexTypes.GPU:
+            for compression in workloadToExecute['compression']:
+                indexingParam = copy.deepcopy(indexingParam)
+                if compression != 0:
+                    indexingParam["ivf_pq_params"]["pq_dim"] = int(workloadToExecute["dimension"] / compression)
+                else:
+                    indexingParam["ivf_pq_params"]["pq_dim"] = 0
+
+                dir_path = ensureDir("graphs")
+                d = workloadToExecute["dimension"]
+                graph_file = get_graph_file(workloadToExecute, d, indexType, indexingParam, dir_path)
+
+
+                for searchParam in workloadToExecute["search-parameters"]:
+                    logging.info(
+                        f"=== Running search for index config: {indexingParam} and search config: {searchParam}==="
+                    )
+                    searchTimingMetrics = search_indices.runIndicesSearch(
+                        xq, graph_file, searchParam, gt
+                    )
+                    logging.info(f"===== Timing Metrics : {searchTimingMetrics} ====")
+                    logging.info(
+                        f"=== Completed search for index config: {indexingParam} and search config: {searchParam}==="
+                    )
+                    logging.info(f"=======")
+                    parameters_level_metrics.append(
+                        {
+                            "indexing-params": indexingParam,
+                            "search-timing-metrics": searchTimingMetrics,
+                            "search-params": searchParam,
+                        }
+                    )
+                    logging.info("Sleeping for 5 sec for better metrics capturing")
+                    time.sleep(5)
+        else:
             dir_path = ensureDir("graphs")
-            put_graph_file_name_in_param(
-                workloadToExecute, d, indexType, indexingParam, dir_path
-            )
-        for searchParam in workloadToExecute["search-parameters"]:
-            logging.info(
-                f"=== Running search for index config: {indexingParam} and search config: {searchParam}==="
-            )
-            searchTimingMetrics = search_indices.runIndicesSearch(
-                xq, indexingParam["graph_file"], searchParam, gt
-            )
-            logging.info(f"===== Timing Metrics : {searchTimingMetrics} ====")
-            logging.info(
-                f"=== Completed search for index config: {indexingParam} and search config: {searchParam}==="
-            )
-            logging.info(f"=======")
-            parameters_level_metrics.append(
-                {
-                    "indexing-params": indexingParam,
-                    "search-timing-metrics": searchTimingMetrics,
-                    "search-params": searchParam,
-                }
-            )
-            logging.info("Sleeping for 5 sec for better metrics capturing")
-            time.sleep(5)
+            d = workloadToExecute["dimension"]
+            graph_file = get_graph_file(workloadToExecute, d, indexType, indexingParam, dir_path)
+
+            for searchParam in workloadToExecute["search-parameters"]:
+                logging.info(
+                    f"=== Running search for index config: {indexingParam} and search config: {searchParam}==="
+                )
+                searchTimingMetrics = search_indices.runIndicesSearch(
+                    xq, graph_file, searchParam, gt
+                )
+                logging.info(f"===== Timing Metrics : {searchTimingMetrics} ====")
+                logging.info(
+                    f"=== Completed search for index config: {indexingParam} and search config: {searchParam}==="
+                )
+                logging.info(f"=======")
+                parameters_level_metrics.append(
+                    {
+                        "indexing-params": indexingParam,
+                        "search-timing-metrics": searchTimingMetrics,
+                        "search-params": searchParam,
+                    }
+                )
+                logging.info("Sleeping for 5 sec for better metrics capturing")
+                time.sleep(5)
+
     del xq
     del gt
     return {
@@ -282,10 +308,11 @@ def prepare_env_for_indexing(
 ):
     dir_path = ensureDir("graphs")
     d = workloadToExecute["dimension"]
-    put_graph_file_name_in_param(workloadToExecute, d, indexType, param, dir_path)
-    if os.path.exists(param["graph_file"]):
-        logging.info(f"Removing file : {param['graph_file']}")
-        os.remove(param["graph_file"])
+    graph_file = get_graph_file(workloadToExecute, d, indexType, param, dir_path)
+    if os.path.exists(graph_file):
+        logging.info(f"Removing file : {graph_file}")
+        os.remove(graph_file)
+    return graph_file
 
 
 def readAllWorkloads():
@@ -297,7 +324,7 @@ def readAllWorkloads():
             sys.exit()
 
 
-def put_graph_file_name_in_param(
+def get_graph_file(
         workloadToExecute: dict, d: int, indexType: IndexTypes, param: dict, dir_path: str
 ):
     str_to_build = f"{workloadToExecute['dataset_name']}_{d}.{indexType.value}"
@@ -310,4 +337,4 @@ def put_graph_file_name_in_param(
         value = value.replace(":", "_")
         str_to_build += f"_{key}_{value}"
     str_to_build += ".graph"
-    param["graph_file"] = os.path.join(dir_path, str_to_build)
+    return os.path.join(dir_path, str_to_build)

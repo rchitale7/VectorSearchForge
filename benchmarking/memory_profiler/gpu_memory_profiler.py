@@ -87,9 +87,9 @@ class GPUMemoryMonitor:
 
     def log_metrics(self):
         df = pd.DataFrame(self.memory_logs)
-        max_memory = df['used_memory'].max()
-        start_memory = df['used_memory'].iloc[0]
-        end_memory = df['used_memory'].iloc[-1]
+        max_memory = df['gpu_used_memory'].max()
+        start_memory = df['gpu_used_memory'].iloc[0]
+        end_memory = df['gpu_used_memory'].iloc[-1]
         logging.info(f"Start GPU Memory: ,{start_memory}")
         logging.info(f"End GPU Memory: ,{end_memory}")
         logging.info(f"Max GPU Memory: ,{max_memory}")
@@ -99,9 +99,9 @@ class GPUMemoryMonitor:
     def log_cpu_metrics(self):
         """Log CPU memory usage metrics"""
         df = pd.DataFrame(self.cpu_memory_logs)
-        max_memory = df['used_memory'].max()
-        start_memory = df['used_memory'].iloc[0]
-        end_memory = df['used_memory'].iloc[-1]
+        max_memory = df['cpu_used_memory'].max()
+        start_memory = df['cpu_used_memory'].iloc[0]
+        end_memory = df['cpu_used_memory'].iloc[-1]
         logging.info(f"Start CPU Memory: ,{start_memory}")
         logging.info(f"End CPU Memory: ,{end_memory}")
         logging.info(f"Max CPU Memory: ,{max_memory}")

@@ -48,7 +48,10 @@ class FaissIndexBuildService(IndexBuildService):
                 else SpaceType(workloadToExecute.get("space-type"))
             )
 
-            gpu_build_params.pop('graph_file', None)
+            gpu_build_params["ivf_pq_params"]["n_lists"] = calculate_ivf_pq_n_lists(
+                len(vectors_dataset.vectors)
+            )
+            gpu_build_params["ivf_pq_params"]["force_random_rotation"] = True
 
             # Step 1a: Initialize GPU Config
             faiss_gpu_index_cagra_builder = FaissGPUIndexCagraBuilder.from_dict(
@@ -82,7 +85,9 @@ class FaissIndexBuildService(IndexBuildService):
                 faiss_cpu_build_index_output, cpu_index_output_file_path
             )
             write_cpu_index_time = timer() - start
-            
+
+            del gpu_build_params["ivf_pq_params"]["force_random_rotation"]
+            del gpu_build_params["ivf_pq_params"]["n_lists"]
             return {
                 "indexTime": gpu_index_build_time,
                 "writeIndexTime": write_cpu_index_time,
