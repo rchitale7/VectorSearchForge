@@ -10,8 +10,8 @@ from core.index_builder.index_builder_utils import (
     get_omp_num_threads,
 )
 from core.index_builder.interface import IndexBuildService
-from benchmarking.decorators.timer import timer_func
 from timeit import default_timer as timer
+import logging
 
 class FaissIndexBuildService(IndexBuildService):
     """
@@ -40,15 +40,18 @@ class FaissIndexBuildService(IndexBuildService):
 
         try:
             # Set number of threads for parallel processing
+            logging.info("In build index")
             faiss.omp_set_num_threads(self.omp_num_threads)
 
             space_type = (
-                SpaceType("L2")
+                SpaceType.L2
                 if workloadToExecute.get("space-type") is None
                 else SpaceType(workloadToExecute.get("space-type"))
             )
 
-            gpu_build_params.pop('graph_file', None)
+            gpu_build_params["ivf_pq_params"]["n_lists"] = calculate_ivf_pq_n_lists(
+                len(vectors_dataset.vectors)
+            )
 
             # Step 1a: Initialize GPU Config
             faiss_gpu_index_cagra_builder = FaissGPUIndexCagraBuilder.from_dict(
@@ -82,7 +85,9 @@ class FaissIndexBuildService(IndexBuildService):
                 faiss_cpu_build_index_output, cpu_index_output_file_path
             )
             write_cpu_index_time = timer() - start
-            
+
+            del gpu_build_params["ivf_pq_params"]["force_random_rotation"]
+            del gpu_build_params["ivf_pq_params"]["n_lists"]
             return {
                 "indexTime": gpu_index_build_time,
                 "writeIndexTime": write_cpu_index_time,
@@ -95,6 +100,7 @@ class FaissIndexBuildService(IndexBuildService):
             }
 
         except Exception as exception:
+            logging.info("There was an exception: " + str(exception))
             # Clean up GPU Index Response if orchestrator failed after GPU Index Creation
             if faiss_gpu_build_index_output is not None:
                 try:
